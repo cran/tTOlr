@@ -1,0 +1,122 @@
+---
+title: "P-values -- Uses, abuses, and alternatives"
+author: "John Maindonald"
+date: '`r format(Sys.Date(),"%d %B %Y")`'
+output: 
+  rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{P-values -- Uses, abuses, and alternatives}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: scistatR.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Statistical analysis is a partner to, and not a substitute
+for, robust scientific processes.  The use of experimental data
+provides the simplest context in which to explore this point.
+For experimental work, over and above what may emerge from a
+statistical analysis, the demand is that results be replicable.
+Laboratory studies have repeatedly shown shown that drinking
+regular caffeinated coffee increases blood pressure, though
+with minimal long term effects.  See @green_kirby_suls_1996.
+It is accepted that there is this effect, not from the 
+statistical analysis of results from any individual trial, 
+but because the effect has been demonstrated in repeated trials.
+The evidence is unusually robust.
+
+The role of statistical analysis has been:
+
+* to demonstrate that, collating the evidence from repeated
+trials, the effect does appear real; 
+* to assess the magnitude of the effect.
+
+Worldwide, hundreds of thousands of randomised trials are
+conducted annually.  What do they tell us?  In clinical medicine,
+follow-up trials are common, and clear conclusions will often
+emerge from the careful collation of evidence that, in important
+cases, is likely to follow.  In many other areas follow-up trials
+have until recently been uncommon. This is now changing, and for
+good reason.  Independent replication of the experimental process
+provides checks on the total experimental process, including the
+statistical analysis.  It is unlikely that the same mistakes in
+experimental procedure and/or statistical analysis will be repeated.
+
+These replication rates are so low, in the areas
+to which these papers relate, that they make nonsense of citations
+to published individual trial results as evidence
+that a claimed effect has been scientifically demonstrated.}
+Papers that had a key role in getting attention to reproducibility
+concerns have been @prinz2011believe and 
+@begley2012drug.  The first (6 out of 53 "landmark" studies
+reproduced)  related to drug trials, and the second (19 out of 65 
+"seminal" studies) to cancer drug trials.  Since those studies
+appeared, results have appeared from systematic attempts to
+reproduce  published work in psychology (around 40%), in
+laboratory economics (11 of 18), and in social science (12 of 18).
+
+For research and associated analyses with observational data,
+the absence of experimental control offers serious challenges.
+In a case where the aim is to compare two or more groups, there 
+are certain to be more differences than the difference that is
+of interest.  Commonly, regression methods are used to apply
+"covariate adjustments".  It is then crucial that all relevant 
+covariates and covariate interactions are accounted for, and that 
+covariates are measured with adequate accuracy.  Do covariates
+require transformation (e.g., $x$, or $\log(x)$, or $x^2$) for
+purposes of use in the regression model?
+
+In a hard-hitting paper titled "Cargo-cult statistics and
+scientific crisis", @stark_saltelli_2018 comment,
+quoting also from @edwards_roy_2017:
+
+> While some argue that there is no crisis (or at least not a systemic problem), bad incentives, bad scientific practices, outdated methods of vetting and disseminating results, and techno-science appear to be producing misleading and incorrect results. This might produce a crisis 
+of biblical proportions: as Edwards and Roy write: ``If a critical mass 
+of scientists become untrustworthy, a tipping point is possible in 
+which the scientific enterprise itself becomes inherently corrupt and public trust is lost, risking a new dark age with devastating 
+consequences to humanity.''
+
+Statistical issues are then front and centre in what many are identifying
+as a crisis, but are not the whole story. The crisis is one that
+scientists and statisticians need to tackle in partnership.
+
+In a paper that deserves much more attention than it has received,
+@tukey_1997, John W Tukey
+argued that, as part of the process of fitting a model and forming a
+conclusion, there should be  incisive and informed critique of the data
+used, of the model, and of the inferences made. It is important that
+analysts search out available information about the processes that
+generated the data, and consider critically how this may affect the
+reliance placed on it. Other specific types of challenge (this list is
+longer than Tukey's) may include:
+\begin{itemize}
+\tightlist
+\item For experiments, is the design open to criticism?
+\item Look for biases in processes that generated the data.
+\item Look for inadequacies in laboratory procedure.
+\item Use all relevant graphical or other summary checks to
+critique the model that underpins the analysis.
+\item Where possible, check the performance of the model on
+test data that reflects the manner of use of results.
+(If for example predictions are made that will be applied a
+year into the future, check how predictions made a year
+ahead panned out for historical data.)
+\item For experimental data, have the work replicated
+independently by another research group, from generation of
+data through to analysis.
+\item Have analysis results been correctly interpreted,
+in the light of subject area knowledge.
+\end{itemize}
+Exposure to diverse challenges will build (or destroy!) confidence
+in model-based inferences. We should trust those results that have
+withstood thorough and informed challenge. 
+
+Data do not stand on their own. An understanding of the processes
+that generated the data is crucial to judging how data can and cannot
+reasonably be used.  So also is application area insight.
+
+# References {-}
+

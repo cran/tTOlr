@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="John Maindonald" />
+
+<meta name="date" content="2020-08-11" />
+
+<title>P-values – Uses, abuses, and alternatives</title>
+
+
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">P-values – Uses, abuses, and alternatives</h1>
+<h4 class="author">John Maindonald</h4>
+<h4 class="date">11 August 2020</h4>
+
+
+
+<p>Statistical analysis is a partner to, and not a substitute for, robust scientific processes. The use of experimental data provides the simplest context in which to explore this point. For experimental work, over and above what may emerge from a statistical analysis, the demand is that results be replicable. Laboratory studies have repeatedly shown shown that drinking regular caffeinated coffee increases blood pressure, though with minimal long term effects. See <span class="citation">Green, Kirby, and Suls (1996)</span>. It is accepted that there is this effect, not from the statistical analysis of results from any individual trial, but because the effect has been demonstrated in repeated trials. The evidence is unusually robust.</p>
+<p>The role of statistical analysis has been:</p>
+<ul>
+<li>to demonstrate that, collating the evidence from repeated trials, the effect does appear real;</li>
+<li>to assess the magnitude of the effect.</li>
+</ul>
+<p>Worldwide, hundreds of thousands of randomised trials are conducted annually. What do they tell us? In clinical medicine, follow-up trials are common, and clear conclusions will often emerge from the careful collation of evidence that, in important cases, is likely to follow. In many other areas follow-up trials have until recently been uncommon. This is now changing, and for good reason. Independent replication of the experimental process provides checks on the total experimental process, including the statistical analysis. It is unlikely that the same mistakes in experimental procedure and/or statistical analysis will be repeated.</p>
+<p>These replication rates are so low, in the areas to which these papers relate, that they make nonsense of citations to published individual trial results as evidence that a claimed effect has been scientifically demonstrated.} Papers that had a key role in getting attention to reproducibility concerns have been <span class="citation">Prinz, Schlange, and Asadullah (2011)</span> and <span class="citation">Begley and Ellis (2012)</span>. The first (6 out of 53 “landmark” studies reproduced) related to drug trials, and the second (19 out of 65 “seminal” studies) to cancer drug trials. Since those studies appeared, results have appeared from systematic attempts to reproduce published work in psychology (around 40%), in laboratory economics (11 of 18), and in social science (12 of 18).</p>
+<p>For research and associated analyses with observational data, the absence of experimental control offers serious challenges. In a case where the aim is to compare two or more groups, there are certain to be more differences than the difference that is of interest. Commonly, regression methods are used to apply “covariate adjustments”. It is then crucial that all relevant covariates and covariate interactions are accounted for, and that covariates are measured with adequate accuracy. Do covariates require transformation (e.g., <span class="math inline">\(x\)</span>, or <span class="math inline">\(\log(x)\)</span>, or <span class="math inline">\(x^2\)</span>) for purposes of use in the regression model?</p>
+<p>In a hard-hitting paper titled “Cargo-cult statistics and scientific crisis”, <span class="citation">Stark and Saltelli (2018)</span> comment, quoting also from <span class="citation">Edwards and Roy (2017)</span>:</p>
+<blockquote>
+<p>While some argue that there is no crisis (or at least not a systemic problem), bad incentives, bad scientific practices, outdated methods of vetting and disseminating results, and techno-science appear to be producing misleading and incorrect results. This might produce a crisis of biblical proportions: as Edwards and Roy write: ``If a critical mass of scientists become untrustworthy, a tipping point is possible in which the scientific enterprise itself becomes inherently corrupt and public trust is lost, risking a new dark age with devastating consequences to humanity.’’</p>
+</blockquote>
+<p>Statistical issues are then front and centre in what many are identifying as a crisis, but are not the whole story. The crisis is one that scientists and statisticians need to tackle in partnership.</p>
+In a paper that deserves much more attention than it has received, <span class="citation">Tukey (1997)</span>, John W Tukey argued that, as part of the process of fitting a model and forming a conclusion, there should be incisive and informed critique of the data used, of the model, and of the inferences made. It is important that analysts search out available information about the processes that generated the data, and consider critically how this may affect the reliance placed on it. Other specific types of challenge (this list is longer than Tukey’s) may include:
+
+<p>Exposure to diverse challenges will build (or destroy!) confidence in model-based inferences. We should trust those results that have withstood thorough and informed challenge.</p>
+<p>Data do not stand on their own. An understanding of the processes that generated the data is crucial to judging how data can and cannot reasonably be used. So also is application area insight.</p>
+<div id="references" class="section level1 unnumbered">
+<h1>References</h1>
+<div id="refs" class="references">
+<div id="ref-begley2012drug">
+<p>Begley, C Glenn, and Lee M Ellis. 2012. “Drug Development: Raise Standards for Preclinical Cancer Research.” <em>Nature</em> 483 (7391). Nature Publishing Group: 531–33.</p>
+</div>
+<div id="ref-edwards_roy_2017">
+<p>Edwards, Marc A., and Siddhartha Roy. 2017. “Academic Research in the 21st Century: Maintaining Scientific Integrity in a Climate of Perverse Incentives and Hypercompetition.” <em>Environmental Engineering Science</em> 34 (1): 51–61. <a href="https://doi.org/10.1089/ees.2016.0223">https://doi.org/10.1089/ees.2016.0223</a>.</p>
+</div>
+<div id="ref-green_kirby_suls_1996">
+<p>Green, Peter J., Robert Kirby, and Jerry Suls. 1996. “The Effects of Caffeine on Blood Pressure and Heart Rate: A Review.” <em>Annals of Behavioral Medicine</em> 18 (3): 201–16. <a href="https://doi.org/10.1007/bf02883398">https://doi.org/10.1007/bf02883398</a>.</p>
+</div>
+<div id="ref-prinz2011believe">
+<p>Prinz, Florian, Thomas Schlange, and Khusru Asadullah. 2011. “Believe It or Not: How Much Can We Rely on Published Data on Potential Drug Targets?” <em>Nature Reviews Drug Discovery</em> 10 (9). Nature Publishing Group: 712–12.</p>
+</div>
+<div id="ref-stark_saltelli_2018">
+<p>Stark, Philip B., and Andrea Saltelli. 2018. “Cargo-Cult Statistics and Scientific Crisis.” <em>Significance</em> 15 (4): 40–43. <a href="https://doi.org/10.1111/j.1740-9713.2018.01174.x">https://doi.org/10.1111/j.1740-9713.2018.01174.x</a>.</p>
+</div>
+<div id="ref-tukey_1997">
+<p>Tukey, J. W. 1997. “More Honest Foundations for Data Analysis.” <em>Journal of Statistical Planning and Inference</em> 57 (1): 21–28.</p>
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
