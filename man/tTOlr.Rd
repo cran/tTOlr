@@ -2,7 +2,7 @@
 % Please edit documentation in R/tTOlr.R
 \name{tTOlr}
 \alias{tTOlr}
-\title{Maximum Likelihood Under H1, Given P-value.}
+\title{Maximum Likelihood ratio for H1 versus H0, given t-statistic or p-value}
 \usage{
 tTOlr(
   t = NULL,
@@ -16,12 +16,13 @@ tTOlr(
 )
 }
 \arguments{
-\item{t}{\code{t}-statistic.  If \code{NULL}, this is calculated from
-the \code{p}-value.}
+\item{t}{\code{t}-statistic.  If \code{NULL}, this is calculated
+from the \code{p}-value.}
 
 \item{df}{Degrees of freedom.}
 
-\item{nsamp}{Sample size.}
+\item{nsamp}{Sample size.  For a two-sample test, this should be
+a vector of length 2.}
 
 \item{pval}{\code{p}-value.  If \code{NULL}, this is calculated
 from the \code{t}-statistic and degrees of freedom.}
@@ -44,12 +45,11 @@ List, with elements
  \item t - \code{t}-statistic
  \item df - Degrees of freedom
  \item pval - P-value
- \item lik0 - Likelihood under H0
  \item likDelta - Likelihood, given difference delta under H0
  \item lrDelta - Likelihood ratio, given difference delta under H0
  \item maxlik - Maximum likelihood, under allowed alternatives H1
- \item lrmax - Maximum of likelihood ratio,
- under allowed alternatives H1
+ \item lrmax - Maximum likelihood under H1, on the scale of the
+ $t$-statistic
  \item tmax - \code{t}-statistic for difference in means
  that makes likelihood under H1 a maximum
  }
@@ -59,21 +59,36 @@ Given the \code{t}-statistic for a difference in means,
 or for a mean difference, and degrees of freedom,
 determine the maximum likelihood under the alternative
 H1, and the $t$-statistic for the difference in means
-that makes the likelihood under H1 a maximum.
-Additionally, return the likelihood under H0.
+that makes the likelihood under H1 a maximum. Also
+available is the likelihood that corresponds to  a
+particular value of a particular effect size (mean
+divided by standard deviation) \code{delta}.
+}
+\details{
+The function returns the maximum likelihood estimate
+of the maximum likelihood on the scale of the $t$-statistic,
+for the likelihood under the alternative, when the
+when the $t$-statistic is used as non-centrality parameter.
+This results in a value for the likelihood ratio that differs
+from (and is smaller than) the standard likelihood ratio
+statistic. Additionally, return the likelihoods under H0 and H1.
+}
+\note{
+The likelihood estimate for H1 versus H0 is unchanged if
+the roles of H0 and H1 are reversed.
 }
 \examples{
 likStats <- tTOlr(pval=0.02, nsamp=c(9,9), twoSided=TRUE,
                 delta=1.4, sd=1.2)
-print(unlist(likStats),digits=2)
+print(likStats,digits=2)
 likStats <- tTOlr(t=2.58, df=16, nsamp=c(9,9), twoSided=TRUE,
                   delta=1.4, sd=1.2)
-print(unlist(likStats),digits=2)
+print(likStats,digits=2)
 likStats <- tTOlr(pval=0.02, nsamp=9, twoSided=FALSE,
                 delta=1.4, sd=1.2)
-print(unlist(likStats),digits=2)
+print(likStats,digits=2)
 likStats <- tTOlr(t=2.45, df=8, nsamp=9, twoSided=FALSE,
                   delta=1.4, sd=1.2)
-print(unlist(likStats),digits=2)
+print(likStats,digits=2)
 
 }

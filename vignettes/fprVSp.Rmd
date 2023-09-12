@@ -1,18 +1,21 @@
 ---
-title: "Understanding P-values --- Likelihood Ratio & False Positive Risk"
+title: "Likelihood Ratio and False Positive Risk"
 author: "John Maindonald, Statistics Research Associates"
 date: '`r format(Sys.Date(),"%d %B %Y")`'
 documentclass: article
-classoption: b5paper
-fontsize: 10pt
+# fontsize: 12pt
 output: 
+  bookdown::pdf_book:
+    keep_tex: yes
   bookdown::html_document2:
+    theme: cayman
+    highlight: vignette
+    base_format: prettydoc::html_pretty
     toc: true
-    toc_depth: 3
+    toc_depth: 2
     number-sections: true
+    pandoc_args: NULL
     link-citations: true
-pkgdown:
-  as_is: true
 vignette: >
   %\VignetteIndexEntry{Likelihood Ratio and False Positive Risk}
   %\VignetteEncoding{UTF-8}
@@ -26,11 +29,51 @@ header-includes:
 - \DeclareUnicodeCharacter{2009}{<}
 ---
 
+<style type="text/css">
+div#TOC li {
+    list-style:none;
+    background-image:none;
+    background-repeat:none;
+    background-position:0;
+}
+body{
+   font-size: 14px;
+}
+td{
+  font-size: 14px;
+}
+code.r{
+  font-size: 13px;
+}
+pre {
+  font-size: 13px
+}
+</style>
+
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
+  fig.align='center',
+  width=55,
   collapse = TRUE,
   comment = "#>"
 )
+```
+
+```{r set-theme, echo=FALSE}
+sides <- list(tck = 0.6, pad1 = 0.75, pad2 = 0.75)
+theme <- list(axis.line = list(alpha = 1, col = 'gray40',
+                               fill = "transparent", lty = 1, lwd = 0.5),
+              strip.border = list(alpha = 1, col = rep('gray40', 6),
+                                  lty = rep(1, 6), lwd = rep(0.5, 6)),
+              strip.shingle = list(alpha = 1, col = rep("gray80", 7)),
+              box.3d = list(col = 'gray40'),
+              axis.components = list(left = sides, top = sides,
+                                     right = sides, bottom = sides),
+              fontsize = list(text = 10, points = 6))
+library(lattice)
+trellis.par.set(theme)
+size12 <- list(fontsize=list(text=12, points=8))
+size10 <- list(fontsize=list(text=10, points=6))
 ```
 
 ```{r setup, include=FALSE}
@@ -42,192 +85,178 @@ knitr::opts_chunk$set(echo = TRUE, comment=NA)
 suppressPackageStartupMessages(library(lattice))
 ```
 
-## Introduction {-}
+# Introduction {-}
 
-## Introduction {-}
+Under NULL hypothesis assumptions, $p$-values are uniformly
+distributed on the unit interval.  The common $p \leq 0.05$
+strategy for rejecting the NULL hypothesis is justified by
+a probability for this, under the NULL, that equals 0.05.
+$P$-values are often misinterpreted.  The notes that follow
+draw attention to common misunderstandings, and compare
+and contrast $p$-values with the insights likelihood based 
+statistics provide.
 
-Data from an experiment that compares results from a treatments
+The $p$-value probability $p$ relates only to what can be 
+expected under the NULL.  For tests that are based on 
+$t$-statistics, a $p$-value that equals 0.05 translates to 
+a maximum likelihood ratio that, for degrees of freedom 
+greater than 5, is less than 5.
+
+Decimal numbers that are shown on graphs are given to two
+significant figures.  In the text, they may be given
+three significant figures.
+
+# Basic properties of $p$-values
+
+```{r cap1, echo=FALSE}
+cap1 <- "Under the NULL hypothesis, and assuming
+distributional assumptions are correct, $p$-values are uniformly
+distributed on the unit interval. The strip plots each show the
+distribution of values in a random sample of $p$-values, under
+NULL hypothesis assumptions.  The ordering from 1 to 0 reflects
+the decrease in the $p$-value, for commonly used test statistics, 
+as the absolute value of the test statistic increases. Values 
+less than the commonly used 0.05 threshold are shown in red."
+```
+
+$P$-values are commonly used within a Null Hypothesis
+Significance Testing (NHST) framework.  This approach to 
+statistical decision making sets up a choice between a null
+hypothesis, commonly written H$_0$, and alternative H$_1$,
+with the calculated $p$-value used to decide whether H$_0$
+should be rejected in favour of H$_1$.  Commonly, H$_0$
+is the hypothesis that a difference of means, or a mean
+difference, has been drawn from a population with mean
+$\mu = 0$.  In a medical context, a treatment of interest 
+may be compared with a placebo. Then
+
+* Given H$_0$, the $p$-value is uniformly distributed on the
+interval $0 \leq p \leq 1$
+     + As a consequence, for any $\alpha$, 
+     P[p $\leq \alpha$ | H$_0$] = $\alpha$
+* Under H$_1$, the $p$-value is designed to increase as the
+     difference from H$_0$ increases.
+     
+More informative than to report $p \leq 0.05$ is to give a 95%
+confidence interval for the mean.  The NULL hypothesis is rejected
+at a level of $\alpha = 0.05$ if and only if the interval does
+not contain 0.
+
+Figure \@ref(fig:H0) shows the distributions of values for five
+random samples drawn from the uniform distribution on the interval
+from 1 to 0.  The ordering from 1 to 0 is designed to reflect the
+decrease in $p$-value with increasing absolute value of the $t$
+or other such statistic.
+
+```{r H0, fig.width=5.75, fig.height=2.25, out.width='98%', fig.show='hold', fig.cap=cap1, echo=FALSE}
+set.seed(17)
+rr <- data.frame(x=runif(500), gp=rep(rev(letters[1:5]),rep(100,5)))
+panelfun <- function(x,y,...){
+                  x1 <- x[x>0.05]
+                  y1 <- y[x>0.05]
+                  x2 <- x[x<=0.05]
+                  y2 <- y[x<=0.05]
+                  panel.dotplot(x1,y1,...);
+                  panel.dotplot(x2,y2,..., col='red');
+                  panel.axis(side = "bottom", at=0.05, outside=TRUE, 
+                             ticks=TRUE);
+                  panel.abline(v=0.05, col='gray')
+}
+atx <- c(seq(from=1,to=.2, by=-.2),0.05)
+gph <- dotplot(gp~x, data=rr, pch='|', alpha=1, panel=panelfun, 
+               xlim=c(1,0), xlab=expression(italic(p)*'-value'), 
+               ylab='',scales=list(x=list(at=atx), y=list(draw=F)))
+update(gph, main=list("Five random samples of 100 from the uniform", 
+                 font=1, y=-1, cex=0.8))
+```
+
+Under H$_0$, a fraction $\alpha$ of $p$-values from independent
+replications of an experiment will, on average, be less than $\alpha$.
+Figure \@ref(fig:H0), with values less than 0.05 shown in red, is
+designed to highlight this point for $\alpha$=0.05 .  The values
+in the first and second samples that are $\leq$ 0.05 are, to three 
+decimal places.
+
+```{r lt5pc, echo=FALSE}
+cat(rev(sort(with(rr, round(subset(x, x<=0.05 & gp=='a'), 3)))))
+cat(rev(sort(with(rr, round(subset(x, x<=0.05 & gp=='b'), 3)))))
+```
+
+Values that are less than $\alpha$ (in the figure, $\alpha$=0.05)
+are sampled from a uniform distribution on the interval from
+ $\alpha$ to 0.
+    
+The calculated $p$-value provides more nuanced evidence than
+comes from merely noting whether it is less than $\alpha$, 
+typically with $\alpha$ = 0.05.  A calculated value $p$ is, 
+however, at the upper end of the range of values that under 
+H$_0$ occur with probability $p$.  It is, under H$_0$, 
+the expected value for $p$-values that are in the interval
+that extends from 0 to $\alpha = 2p$. This suggests that 
+
+* If $p$ = 0.05, it is the expected value, under Under H$_0$,
+of values that range from 0 to 0.1, and that occur with a 
+frequency of 0.1 (or 10%).
+* Note, however!  Under H$_1$, the distribution is no longer 
+uniform, and the range of values for which a calculated value
+$p$ is the expected value will change.
+    + Doubling the calculated $p$-value, in order to get an
+    equivalent that on average corresponds to the "Reject
+    H$_0$ when $p < \alpha$ strategy will then, on average,
+    lead to a different rejection rate when the NULL is
+    false!
+
+Rather that making such sense as one can of of the calculated
+$p$-value, a better approach is to work with likelihood ratios.
+    
+## Wear comparison for two shoe materials {#wear}
+
+Data from an experiment that compares results from a treatment
 with a baseline provides a relatively simple setting in which to 
 probe the interpretation that should be placed on a given $p$-value.
 Even in this 'simple' setting, the issues that arise for the
 interpretation of a $p$-value, and its implication for the credence
 that should be given to a claimed difference, are non-trivial.
 
-$P$-values are calculated conditional on the null hypothesis being
-true.  In order to obtain a probability that the null hypothesis 
-is true, they must be supplemented with other information. 
-$P$-values do not answer the questions that are likely to be of
-immediate interest. @berkson1942tests makes the point succinctly:
+The `MASS::shoes` dataset compares, for each of ten boys, 
+the wear on two different shoe materials.  Materials A and B 
+were assigned at random to feet --- one to the left foot, and 
+the other to the right.  It will be used as a relatively 
+simple setting in which to probe the interpretation that 
+should be placed on a given $p$-value.
 
-> If an event has occurred, the definitive question is not, 
-`Is this an event which would be rare if the null hypothesis 
-is true?’ but ‘Is there an alternative hypothesis under which 
-the event would be relatively frequent?'
-
-Of even more interest, in many contexts, is an assessment of
-the false positive risk, i.e., of the probability that, having 
-accepted the alternative hypothesis, it is in fact false.
-This requires an assessment of the prior probability that the
-null is true.  The best one can do, often, is to check how the
-false positive risk may vary with values of the prior 
-probability that fall within a range that is judged plausible.
-
-In the calculation of a $p$-value, there is regard both to the 
-value of a statistic that has been calculated from the observed 
-data, and to more extreme values.  This feature attracted the
-criticism, in @Jeffreys, that 
-"a hypothesis which may be true may be rejected because it has
-not predicted observable results which have not occurred."
-The use of likelihoods, which depend only on the actual 
-observed data and have better theoretical properties, avoids 
-this criticism.  A likelihood is a more nuanced starting point 
-than a $p$-value for showing how the false positive risk
-varies with the prior probability.
-
-## Introduction {-}
-
-Data from an experiment that compares results from a treatments
-with a baseline provides a relatively simple setting in which to 
-probe the interpretation that should be placed on a given $p$-value.
-Even in this 'simple' setting, the issues that arise for the
-interpretation of a $p$-value, and its implication for the credence
-that should be given to a claimed difference, are non-trivial.
-
-$P$-values are calculated conditional on the null hypothesis being
-true.  In order to obtain a probability that the null hypothesis 
-is true, they must be supplemented with other information. 
-$P$-values do not answer the questions that are likely to be of
-immediate interest. @berkson1942tests makes the point succinctly:
-
-> If an event has occurred, the definitive question is not, 
-`Is this an event which would be rare if the null hypothesis 
-is true?’ but ‘Is there an alternative hypothesis under which 
-the event would be relatively frequent?'
-
-Of even more interest, in many contexts, is an assessment of
-the false positive risk, i.e., of the probability that, having 
-accepted the alternative hypothesis, it is in fact false.
-This requires an assessment of the prior probability that the
-null is true.  The best one can do, often, is to check how the
-false positive risk may vary with values of the prior 
-probability that fall within a range that is judged plausible.
-
-In the calculation of a $p$-value, there is regard both to the 
-value of a statistic that has been calculated from the observed 
-data, and to more extreme values.  This feature attracted the
-criticism, in @Jeffreys, that 
-"a hypothesis which may be true may be rejected because it has
-not predicted observable results which have not occurred."
-The use of likelihoods, which depend only on the actual 
-observed data and have better theoretical properties, avoids 
-this criticism.  A likelihood is a more nuanced starting point 
-than a $p$-value for showing how the false positive risk
-varies with the prior probability.
-
-# Making sense of $p$-values
-
-The Null Hypothesis Significance Testing (NHST) approach to 
-statistical decision making sets up a choice between a
-null hypothesis, commonly written H$_0$, and alternative H$_1$,
-with the calculated $p$-value used to decide whether 
-H$_0$ should be rejected in favour of H$_1$.  In a medical 
-context, a treatment of interest may be compared with a placebo.  
-
-Such a binary choice is not always appropriate.
-There are many circumstances where it makes more sense to treat
-the problem as one of estimation, with the estimate accompanied
-with a measure of accuracy.
-
-## Examples that illustrate key points
-
-### Wear comparison for two different shoe materials {-}
-
-A simple example will serve as a starting point for
-discussion.  The \texttt{MASS::shoes}
-dataset compares, for each of ten boys, the wear on two
-different shoe materials.  Materials A and B were assigned 
-at random to feet --- one to the left foot, and the other 
-to the right.  The measurements of wear, and the differences
-for each boy, were:
+The measurements of wear, and the differences for each 
+boy, were:
 ```{r wear}
 wear <- with(MASS::shoes, rbind(A,B,d=B-A))
 colnames(wear) <- rep("",10)
 wear
 ```
-The differences are then used to calculate a $t$-statistic,
-on the basis of which, a statistical test is performed that
-is designed to help in choosing between the alternatives:
 
-* H0: $\mu$ = 0 (the NULL hypothesis)
-* H1: $\mu \neq 0$ (a 2-sided test) or $\mu > 0$ (a 1-sided 
-test), for the alternative.
+Here, the samples are paired  The differences will be
+used for analysis, thus reducing the analysis to that
+for a single sample $t$-test. The differences 
+$d_i, i=1, 2, \ldots, n$ are then used for analysis. 
+The $p$-value for testing for no difference is obtained 
+by referring the $t$-statistic for the mean $\bar{d}$ of 
+the $d_i$ to a $t$-distribution with $n-1$ degrees of freedom.  
 
-The $p$-value is calculated, assuming that the differences
+The calculation assumes that the differences
 $d_i, i=1, 2, \ldots 10$ have been independently drawn
 from the same normal distribution.  The statistic 
-$\sqrt{n} \bar{d}/s$, where $\bar{d}$ is the mean of the $d_i$,
+$\sqrt{n} \, \bar{d}/s$, where $\bar{d}$ is the mean of the $d_i$,
 and $s$ is the sample standard deviation,  can then be
 treated as drawn from a $t$-distribution.
 The $p$-value for a 2-sided test is then, assuming H0, and as 
-any difference might in principle go in either direction:
+any difference might in principle go in either direction
 
 > the probability of occurrence of values of the 
 $t$-statistic $t$ that are greater than or equal to
 $\sqrt{n} \bar{d}/s$ in magnitude
 
-It is, also, the probability that:
-
-> a $p$-value calculated in this way will, under the same
-NULL hypothesis assumptions, be less than or equal to
-the observed $p$.
-
-These definitions may seem, if serious attention is paid to 
-them, contorted and unhelpful.  The discussion that follows
-will, as well as commenting on common misunderstandings,
-examine perspectives on $p$-values that will help explain 
-how they can be meaningfully interpreted.  Just as
-importantly, how should they be used?
-
-In other words, use $p$-values as a screening device, to identify
-results that may merit further investigation.  This is very different
-from the way that $p$-values have come to be used in most current
-scientific discourse.  A $p$-value should be treated as a measure of 
-change in the weight of evidence, not a measure of the absolute weight of evidence.
-
-A researcher will want to know: 
-''Given that the value observed is $p$, not some smaller value, 
-what does this imply for the conclusions that can be drawn from
-the experimental data?''  Additional information, and perhaps
-a refining of the question, if one is the say more than that:
-''As the $p$-value becomes smaller, it becomes less likely
-that the NULL hypothesis is true.''
-
-In the sequel, likelihood ratio statistics will be examined,
-both for the light that they shed on $p$-values, and as
-alternatives to $p$-values.  It is necessary to consider
-carefully just what likelihood ratio best fits what the
-researcher wants to know.  What is the smallest difference 
-in means that is of practical importance?
-
-There are two cases to consider --- the one-sample case, and 
-the two-sample case.  The discussion that follows will focus
-on the one-sample case.  This may arise in two ways.
-A treatment may be compared with a fixed baseline, or units 
-in a treatment may be paired, with the differences 
-$d_i, i=1, 2, \ldots, n$ used for analysis. The $p$-value
-for testing for no difference is obtained by referring 
-the $t$-statistic for the mean $\bar{d}$ of the $d_i$ to a 
-$t$-distribution with $n-1$ degrees of freedom.  
-
-### Results from a $t$-test -- shoe wear data {-}
-
-The \texttt{MASS::shoes} dataset is the first of two
-datasets with which we will work.  As noted above, it
-compares, for each of $n = 10$ boys, the wear on two
-different shoe materials.  Results from a $t$-test for the NULL 
-hypothesis that the differences are a random sample 
-from a normal distribution with mean zero gives the 
-result:
+Calculations proceed under the NULL hypothesis 
+assumption that the differences are a random sample 
+from a normal distribution with mean zero:
 ```{r shoes, echo=FALSE}
 wear <- with(MASS::shoes, rbind(A, B, d=B-A))
 library(magrittr)
@@ -235,87 +264,170 @@ shoeStats <- wear['d',] %>%
   {list(Mean=mean(.), SD=sd(.), n=length(.))} %$%
   {c(., SEM=SD/sqrt(n), t=Mean*sqrt(n)/SD)} %$%
   {c(., pval=2*pt(t, df=n-1, lower.tail=FALSE), df=n-1)}
-print(prettyNum(unlist(shoeStats), digits=2, dropTrailing=TRUE),
+print(prettyNum(unlist(shoeStats), digits=3, dropTrailing=TRUE),
       quote=FALSE)
 ```
 
-Figure \@ref(fig:DOshoeDens) compares the density curves,
-under H0 and under an alternative H1 for which the mean
-of the $t$-distribution is $\bar{d}$.  Notice that, in each
-panel, the curve for the alternative is more spread out than
-the curve for the NULL, and is slightly skewed to the right,
-and the mode (where the likelihood is a maximum) is slightly
-to the left of the mean, This is because the distance
-between the curves, as measured by the non-centrality
-parameter for the $t$-distribution for the alternative, is
-subject to sampling error.
+The $p$-value can then be interpreted in the following ways:
 
-<!-- ```{r tTOmaxlik, echo=FALSE} -->
-<!-- tTOmaxlik =  function(t, df) -->
-<!-- { -->
-<!-- # -->
-<!-- # under H1 use non-central t distribution -->
-<!-- # ncp is non-centrality paramater -->
-<!-- lik0 <- dt(t,df) -->
-<!-- int <- t*sqrt(c(df/(df+2.5), df/(df+1))) -->
-<!-- opt <- optimize(f=function(x)dt(x,df,ncp=t),maximum=TRUE, interval=int) -->
-<!-- maxlik=opt[["objective"]] -->
-<!-- # -->
-<!-- ## Calculate `fpr` as `(1-prior)/(1-prior+prior*lr)` -->
-<!-- return(list(maxlik=maxlik, tmax=opt[["maximum"]], lik0=lik0)) -->
-<!-- } -->
-<!-- ``` -->
+* We may have decided in advance to set a cutoff $\alpha$, then
+lumping together all values less than $\alpha$
+    + With $\alpha$ = 0.05, $p$ = `r round(shoeStats[['pval']],3)` 
+would count as an event, under H$_0$, with probability 0.05  
+    + With $\alpha$ = 0.01, this would count as an event, under H$_0$, 
+with probability 0.01
+* The calculated $p$-value presents a more nuanced picture.
+The probability to which a value of magnitude $p$ then
+relates is 2$p$ rather than $p$.  
+    + The calculated $p$ is in the middle of the range 
+    from 2$p$ to 0. The probability that a $p$-value
+    will appear in that range is, under the NULL, 2$p$.
+    
+A 95% (two-sided) confidence interval for the `B-A` wear difference 
+$\mu$ is
 
-<!-- ```{r tTOlr, echo=FALSE} -->
-<!-- tTOlr =  function(pval, t=NULL, nsamp, type="one.sample", delta=NULL, -->
-<!--                      sd=1, twoSided=TRUE, showMax=TRUE) -->
-<!-- { -->
-<!-- if(type=='one.sample'){sdiff <- sqrt(sd^2/nsamp) -->
-<!--                       df <- nsamp-1} else -->
-<!--                       {sdiff=sqrt(sd^2/nsamp + sd^2/nsamp) -->
-<!--                       df=2*(nsamp-1)} -->
-<!--                                         #under H0, use central t distribution -->
-<!-- if(is.null(t)) -->
-<!-- if(twoSided)t<-qt((1-pval/2),df,ncp=0) else -->
-<!--   t<-qt((1-pval),df,ncp=0) -->
-<!-- lik0=dt(t,df,0) -->
-<!-- if(twoSided)ref0 <- 2*lik0 else ref0 <- lik0 -->
-<!-- if(!is.null(delta)) -->
-<!--     likDelta <- dt(t, df, ncp=delta/sdiff) else likDelta <- NULL -->
-<!-- ## -->
-<!-- if(showMax)maxStats <- tTOmaxlik(t, df) else -->
-<!--            maxStats <- NULL -->
-<!-- ## maxlik, lrmax, tmax -->
-<!-- ## Calculate `fpr` as `(1-prior)/(1-prior+prior*lr)` -->
-<!-- likStats <- c(list(pval=pval, t=t, lik0=lik0), -->
-<!--               if(!is.null(likDelta))list(likDelta=likDelta, lrDelta=likDelta/ref0)else NULL, -->
-<!--               if(!is.null(maxStats))with(maxStats,  -->
-<!--               list(maxlik=maxlik, lrmax=maxlik/ref0, tmax=tmax))else NULL) -->
-<!-- likStats -->
-<!-- } -->
-<!-- ``` -->
-
-```{r shoelik, echo=FALSE}
-maxlrShoes <- with(shoeStats, 
-               tTOmaxlik(t=t, df=df)[['maxlik']]/(2*dt(t,df)))
+```{r CIs, echo=FALSE}
+CI95 <- shoeStats[['Mean']] + c(-1,1)*qt(.975,9)*shoeStats[['SEM']]
+CI99 <- shoeStats[['Mean']] + c(-1,1)*qt(.995,9)*shoeStats[['SEM']]
 ```
 
-```{r maxlrGPH, echo=FALSE}
-maxlrGPH <- function(sdev=1, df=9, pval=0.05, offset=0.5, twoSided=TRUE, pretitle=""){
+`shoeStats[['Mean']]` $\pm$ `qt(.97.5,9)*shoeStats[['SEM']]`  
+i.e., `r round(CI95[1],3)` $< \mu <$ `r round(CI95[2],3)`
+
+A 99% confidence interval is `r round(CI99[1],3)` $< \mu <$ `r round(CI99[2],3)`
+
+## What $p$-values do not, and cannot, provide
+
+* A $p$-value does not give the probability that the NULL
+is false.
+    + It is calculated under the assumption that the NULL 
+    hypothesis is true. It does not tell us whether that 
+hypothesis is correct!
+* Nor does the $p$-value give the probability that the results 
+occurred by chance.
+    + In order to calculate this, one needs a prior estimate of
+    the frequency with which, over independent repeats of the
+    process that generated the data, true positives can be
+    expected.
+
+@resnick2017nerdy makes the point thus:
+
+> The tricky point is then, that the $p$-value does not show how rare the results of an experiment are. It’s how rare the results would be
+in the world where the null hypothesis is true. That is, it’s how rare
+the results would be if nothing in your experiment worked, and the difference ... was due to random chance alone.  The $p$-value
+quantifies this rareness.
+
+What one can say is that
+
+> As the $p$-value becomes smaller, it becomes less likely
+that the NULL hypothesis is true.
+
+## Strategies for the use of $p$-values
+
+### A binary choice is not always appropriate. {-}
+There are many circumstances where it makes more sense to treat
+the problem as one of estimation, with the estimate accompanied
+with a measure of accuracy.
+
+### One experiment may not, on its own, be enough {-}
+
+Note comments from @fisher1935design, who introduced the 
+use of $p$-values, on their proper use:
+
+> No isolated experiment, however significant in itself, can suffice for the experimental demonstration of any natural phenomenon; for the ‘one chance in a million’ will undoubtedly occur, with no less and no more than its appropriate frequency, however surprised we may be that it should occur to us. In order to assert that a natural phenomenon is experimentally demonstrable we need, not an isolated record, but a reliable method of procedure. In relation to the test of significance, we may say that a phenomenon is experimentally demonstrable when we know how to conduct an experiment which will rarely fail to give us a statistically significant result.
+
+In other words, use $p$-values as a screening device, to identify
+results that may merit further investigation.  This is very different
+from the way that $p$-values have come to be used in most current
+scientific discourse.  A $p$-value should be treated as a measure
+of change in the weight of evidence, not a measure of the absolute 
+weight of evidence.
+
+An independent repetition of the experiment provides checks that
+no statistical analysis can provide.  Such checks, which are
+widedly neglected, are important for reasons that extend beyond
+checking whether the initial $p \leq \alpha$ was a fluke. For
+experimental data, they provide a check on biases that may arise
+from mistakes in procedure.
+
+When $p$-values are used to choose between a NULL and an
+alternative, the focus is on how rare the "event" would be if
+the NULL hypothesis is true.  There is no attention to assessing
+how much more likely it would be if the NULL is false.
+Likelihood ratios, which will now be discussed, do provide such
+a comparison.  While the detailed discussion will be based
+around tests and comparisons that work with $t$-statistics,
+it will illustrate principles that apply more widely.
+
+## Small differences may be of no interest
+
+Irrespective of the threshold set for finding a difference,
+both $p$ and the likelihood ratio will detect increasingly
+small differences from the NULL as the sample size increases.
+A way around this is to set a cutoff for the minimum
+difference of interest, and calculate the difference 
+relative to that cutoff.
+
+### Effectiveness of soporofic drugs {-}
+
+The use of a cutoff will be illustrated using the dataset
+`datasets::sleep`. This has the increase in sleeping hours, 
+on the same set of patients, on each of the two drugs. 
+Consider first the result from a regular two-sided test
+Data, with output from the $t$-test, are:
+```{r sleep}
+sleep2 <-with(sleep, Pair(extra[group==2], extra[group==1]))
+t <- t.test(sleep2 ~ 1, data = sleep)
+```
+
+```{r sleeplik, echo=FALSE}
+maxlrSleep <- with(t, tTOmaxlik(statistic, df=parameter)[['maxlik']]/
+                     (2*dt(statistic,df=parameter)))
+```
+
+The $t$-statistic is `r round(t$statistic,2)`, with $p$ = 
+`r round(t$p.value,4)`.  The $p$-value translates to a maximum
+likelihood ratio that equals `r round(maxlrSleep,1)`, which
+suggests a very clear difference in effectiveness, in favour
+of drug 2.
+
+It does then seem clear that drug B gives a bigger increase
+in hours of sleep. How sure can we be that it is large
+enough to be of substantial consequence?
+
+### A test that sets $\mu$ = 0.8 hours as the baseline {-}
+
+Suppose, now, that 0.8 hours difference is set as the 
+minimum that is of interest.  As we are satisfied
+that drug B gives a bigger increase, and we wish to
+check the strength of evidence for an increase that is
+0.8 hours of more, a one-sided test is appropriate.
+Figure \@ref(fig:DOmaxlr)A compares the densities.
+
+```{r cutoff, echo=FALSE}
+tinfo <- t.test(sleep2 ~ 1, mu=0.8, alternative = 'greater')
+t <- tinfo[['statistic']]; df <- tinfo[['parameter']]
+maxlrSleep.8 <- 
+  with(tinfo, tTOmaxlik(t, df))
+```
+
+```{r maxlrGPH, echo=FALSE, fig.width=6, fig.asp=0.6}
+library(lattice)
+maxlrGPH <- function(t, df, tmax, maxlik, offset=0.5, twoSided=TRUE, pretitle=""){
 #
 # under H1 use non-central t distribution
 # ncp is non-centrality paramater
-if(twoSided)t<-qt((1-pval/2),df,ncp=0) else
-  t<-qt((1-pval),df,ncp=0)
-lik0 <- dt(t, df)
-maxStats <- tTOmaxlik(t, df)
-maxlik <- maxStats[['maxlik']]
-tmax <- maxStats[["tmax"]]
-titl <- paste0(pretitle,"p = ", signif(pval,2),"; LR = ", signif(maxlik,2), "/(2*",signif(lik0,2),") = ", signif(maxlik/(2*lik0),3))
+lik0 <- dt(t,df)
+if(twoSided){
+  maxlrtxt <- paste0(signif(maxlik,2), "/(2*",signif(lik0,3),") = ", signif(maxlik/(2*lik0),2)) 
+  pval <- pt(abs(t), df, lower.tail = FALSE)*2
+} else {maxlrtxt <- paste0(signif(maxlik,2), "/",signif(lik0,2),") = ", signif(maxlik/(lik0),3))
+ pval <- pt(abs(t), df, lower.tail = FALSE)
+}
+titl <- paste0(pretitle, maxlrtxt)
 vals <- pretty(c(-4, 4),50)
-vals2 <- pretty(c(-4, 5),54)
-dframe <- data.frame(x=c(vals,vals2+t),
-                 y=c(dt(vals, df=df),
+vals2 <- pretty(c(-4, 4.16),51)
+dframe <- data.frame(x=c(vals,vals2+t), y=c(dt(vals, df=df),
                      dt(vals2+t, df=df,ncp=t)),
                  hyp=rep(c("H0","H1"),c(length(vals),length(vals2))))
 #
@@ -338,6 +450,11 @@ xyplot(y ~ x, groups=hyp, data=dframe, type='l',
          xlim <- current.panel.limits()$xlim
          ylim <- current.panel.limits()$ylim
          if(twoSided){
+          panel.arrows(t-1.2,0.035,t+.25,lik0/2.5, length=0.1,
+                       alpha=0.5)
+          panel.arrows(-t+1.02,0.035,-t-.25,lik0/2.5, length=0.1,
+                       alpha=0.5)
+          panel.text(0,0.04, paste0('Area=', round(pval,3),"/2"), alpha=0.75,col=col[1])
           panel.axis("left",at=lik0, outside=TRUE, line.col=col[1],
                     labels='H0', text.col=col[1], text.cex=1.0)
           # panel.arrows(x0=xlim[1], y0=lik0, x1=-t, line.alpha=0.25, 
@@ -347,13 +464,19 @@ xyplot(y ~ x, groups=hyp, data=dframe, type='l',
                     c(min(x),x[x< -t],-t,-t))
          yy <- with(subset(dframe,hyp=='H0'), c(0,y[x< -t],lik0,0))
          panel.polygon(xx,yy,...,col=col[1],alpha=0.4)
-         }
+         } else 
+           {panel.arrows(t-.5,0.035,t+.25,lik0/2.5, length=0.1,
+                         alpha=0.5)
+             panel.text(t-.5,0.04, paste('Area =',round(pval,3)), pos=2, offset=0.25, alpha=0.75, col=col[1])
+           }
                   xx <- with(subset(dframe,hyp=='H0'),
                     c(t,t,x[x>t],max(x)))
          yy <- with(subset(dframe,hyp=='H0'), c(0,lik0,y[x>t],0))
          panel.polygon(xx,yy,...,col=col[1],alpha=0.4)
-         panel.lines(x=c(tmax,0.5*(tmax+xlim[2])),y=c(maxlik,maxlik),
-                     lty=2, alpha=0.75)
+         panel.lines(x=c(t,0.54*(t+xlim[2])),y=c(lik0,lik0),
+                     lty=2, alpha=0.75,col=col[1])
+         panel.lines(x=c(tmax,0.54*(t+xlim[2])),y=c(maxlik,maxlik),
+                     lty=2, alpha=0.75,col=col[2])
          panel.axis("right",at=maxlik,labels='H1', outside=TRUE,
                     line.col=col[2],text.col=col[2],text.cex=1.0)
          panel.axis("right",at=maxlik,text.col=col[2], text.cex=1.0,
@@ -361,104 +484,33 @@ xyplot(y ~ x, groups=hyp, data=dframe, type='l',
          panel.axis("right",at=lik0, line.col=col[1], labels='H0',
                     outside=TRUE, text.cex=1.0, text.col=col[1])
          panel.axis("right",at=lik0,text.col=col[1],text.cex=1.0,
-                    labels=round(lik0,4), line.col=col[1])
+                    labels=round(lik0,3), line.col=col[1])
        },
        main=list(titl, just="left", font=1, x=0, y=-0.6)
 )
 }
 ```
 
-```{r cap1, echo=FALSE}
-cap1 <- "Panel A shows density curves for NULL and for 
-the alternative, for a two-sided test with $t$ = 3.35, 
-on 9 degrees of freedom, for the comparison of shoe
-materials (B versus A) in the dataset MASS::shoes.
-Vertical lines are placed at the positions that give 
-the $p$-value.  Panel B shows the normal probability 
-plot for the \\texttt{B-A} differences in the dataset.
-"
-```
-
-```{r DOshoeDens, fig.width=6, fig.asp=0.6, fig.align='center', fig.cap=cap1, out.width='80%', echo=FALSE}
-maxlrGPH(pval=shoeStats[['pval']], twoSided=TRUE)
-```
-
-Likelihood ratios offer useful insights on what $p$-values
-may mean in practice.  Figure \@ref(fig:DOshoeDens) gives
-the maximum likelihood ratio as `r round(maxlrShoes,1)`.
-In the absence of contextual information that gives an 
-indication of the size of the difference that is of 
-practical importance, the ratio of the maximum likelihood 
-when the NULL is false to the likelihood when the NULL is 
-true gives a sense of the meaning that can be placed on a 
-$p$-value.  If information is available on the prior 
-probability, or if a guess can be made, it can be 
-immediately translated into a false positive risk statistic.
-
-Irrespective of the threshold set for finding a difference,
-both $p$ and the likelihood ratio will detect increasingly
-small differences from the NULL as the sample size increases.
-A way around this is to set a cutoff for the minimum
-difference of interest, and calculate the difference 
-relative to that cutoff.  It is simplest to do that for a
-one-sided test.  The use of a cutoff will be illustrated 
-using the second dataset.
-
-### Soporofic drugs: comparison of effectiveness {-}
-
-The dataset `datasets::sleep` has the increase in sleeping 
-hours, on the same set of patients, on each of the two drugs.
-Data, with output from a two-sided $t$-test, are:
-```{r sleep}
-sleep2 <-with(sleep, rbind(Drug1=extra[group==1], Drug2=extra[group==2],
-              d=extra[group==2]-extra[group==1]))
-colnames(sleep2) <- rep("",10)
-sleep2 
-t <- t.test(-extra ~ group, data = sleep, paired=TRUE)
-```
-
-```{r sleeplik, echo=FALSE}
-maxlrSleep <- with(t, tTOmaxlik(statistic, df=parameter)[['maxlik']]/
-                     (2*dt(statistic,df=parameter)))
-```
-
-The $t$-statistic is `r round(t$statistic,2)`, with $p$ = 
-`r round(t$p.value,4)`.  The $p$-value translates to a maximum
-likelihood ratio that equals `r round(maxlrSleep,1)`, which
-suggests a very clear difference in effectiveness.  
-
-### A test that sets $\mu$ = 0.75 hours as the baseline {-}
-
-Suppose, now, that 0.75 hours difference is set as the 
-minimum that is of interest.  As we are satisfied
-that drug B gives a bigger increase, and we wish to
-check the strength of evidence for an increase that is
-0.75 hours of more, a one-sided test is appropriate.
-Figure \@ref(fig:DOmaxlr)A shows the comparison on the
-densities.
-
-```{r cutoff, echo=FALSE}
-t <- t.test(-extra ~ group, data = sleep, mu=0.75, 
-            paired=TRUE, alternative = 'greater')
-```
-
 ```{r cap2, echo=FALSE}
-cap2 <- "Panel A shows density curves for NULL and for 
-the alternative, for a one-sided test with $t$ = 
-2.01 on 9 degrees of freedom.  This is the $t$-statistic 
-for the data on the effect of soporofic drugs when 
-differences are \\texttt{B-A-0.75}, i.e., interest is in
-the strength of evidence that differences are at least
-0.75 hours. A vertical line is placed at the position that 
-gives the $p$-value.  Panel B shows the normal probability 
-plot for the differences.
-"
+cap2 <- paste0("Panel A shows density curves for NULL and for 
+the alternative, for a one-sided test with ",quote("$t$")," = ", 
+round(t,2)," on ",df," degrees of freedom.  This is the ",
+quote("$t$"),"-statistic  for the data on the effect of soporofic
+drugs when differences are `B-A-0.8`, i.e., interest is
+in the strength of evidence that differences are at least
+0.8 hours. A vertical line is placed at the position that 
+gives the ",quote("$p$"), "-value, here equal to ", round(tinfo$p.value,3),
+".  Panel B shows the normal probability 
+plot for the differences.")
 ```
 
-```{r DOmaxlr, fig.width=7, fig.height=3.25, fig.pos='ht', fig.cap=cap2, out.width='100%', echo=FALSE}
-gph1 <- maxlrGPH(pval=t$p.value, pretitle=" A: ")
+```{r DOmaxlr, fig.width=7, fig.asp=0.45, fig.pos='ht', fig.cap=cap2, out.width='100%', echo=FALSE}
+gph1 <- maxlrGPH(t, df,
+         tmax=maxlrSleep.8[['tmax']], 
+         maxlik=maxlrSleep.8[['maxlik']],
+         twoSided=FALSE, pretitle=" A: Maximum LR = ")
 print(gph1, position=c(0,0,0.55,1))
-gph2 <- qqmath(sleep2['d',]-0.75, ylab="B-A-0.75",
+gph2 <- qqmath(-apply(sleep2, 1, diff)-0.8, ylab="B-A-0.8",
                main=list(' B: Normal probability plot', 
                        just='left', font=1, x=0, y=-0.6))
 print(gph2, position=c(0.55,0,1,1),new=FALSE)
@@ -468,10 +520,10 @@ Calculations can be done thus:
 
 ```{r cutoff, echo=TRUE, eval=FALSE}
 ```
-The $t$-statistic is `r round(t$statistic,2)`, with $p$ = 
-`r round(t$p.value,4)`. The maximum ratio of the likelihoods, 
+The $t$-statistic is `r round(tinfo$statistic,2)`, with $p$ = 
+`r round(tinfo$p.value,3)`. The maximum ratio of the likelihoods, 
 given in Figure \@ref(fig:DOmaxlr)A as 3.5, is much smaller 
-than the value of $p^{-1}-1$ = `r round(t$p.value^{-1}-1,1)`.
+than the value of $\frac{1-p}{p}$ = `r round(tinfo$p.value^{-1}-1,1)`.
 
 The normal probability plot shows a clear departure from
 normality.  At best, the $p$-values give ballpark
@@ -484,78 +536,180 @@ This, however, requires an assumed distribution for
 $\bar{d}$ under the alternative.  It can never exceed 
 the maximum value, calculated as in Figure \@ref(fig:DOmaxlr)A
 
-## Use of a cutoff $\alpha$ versus the calculated $p$-value
-
-In the discussion to date, we have worked with the calculated
-$p$-value.  Note the distinction between:
-
-1) Choosing a cutoff $\alpha$ in advance, treating all values
-$p$ that are less than $\alpha$ as evidence of a real difference,
-and ignoring the more nuanced information provided by the
-actual calculated $p$-value.
-    + Under the NULL hypothesis, the probability of (falsely)
-    finding a difference is then $\alpha$.
-    + The ratio $(\alpha^{-1}-1):1$, which is 19:1 for
-    $\alpha$ = 0.05, has the role of a likelihood ratio.
-    + Here, what is prescribed is a strategy.  Its consequences
-    have to be evaluated by studying what happens when it is
-    applied, repeatedly, over (infinitely) many results.
-2) The magnitude of the individual $p$-value.
-    + Under H0, $p$ is uniformly distributed on the interval
-    $0 <= p <= 1$.  
-    + The individual $p$-value is at the upper end of the 
-    range of values of which account is taken. It lies in the
-    middle of a range of values that extend from 2$p$ to 0
-    and which, under the NULL, occur with probability 2$p$.  
-    This suggests a form of equivalence between a calculated
-    $p$-value $p$ and $\alpha = 2p$.
-    
-## Common sources of misunderstanding
-
-Two common misinterpretations of $p$-values are:
-
-* The $p$-value gives the probability that the NULL
-hypothesis is false.
-    + This is wrong because the $p$-value is calculated under
-    the assumption that the NULL hypothesis is false.  It cannot
-    tell us the probability that the assumption under which
-    it is calculated is correct.
-* The $p$-value is the probability that the results occurred by chance.
-    + In order to calculate this, one needs to know how many of
-    the positives are true positives.
-
-These statements are also wrong if, in the case where a a cutoff 
-$\alpha$ has been chosen in advance, $p$ is replaced by $\alpha$.
-
-@resnick2017nerdy makes the point thus:
-
-> The tricky point is then, that the $p$-value does not show how rare the results of an experiment are. It’s how rare the results would be
-in the world where the null hypothesis is true. That is, it’s how rare
-the results would be if nothing in your experiment worked, and the difference ... was due to random chance alone.  The $p$-value
-quantifies this rareness.
-
-It is important to show that the there is an alternative hypothesis
-under which the observed data would be relatively more likely.
-Likelihood ratio statistics address that comparison directly,
-where $p$-values do not.  Where there is a prior judgement on
-the extent of difference between $H_1$ and $H_1$ that is of
-of practical interest, this may have implications for the choice
-of statistic.
-
-### One experiment may not, on its own, be enough {-}
-
-Note comments from @fisher1935design, who introduced the 
-use of $p$-values, on their proper use:
-
-> No isolated experiment, however significant in itself, can suffice for the experimental demonstration of any natural phenomenon; for the ‘one chance in a million’ will undoubtedly occur, with no less and no more than its appropriate frequency, however surprised we may be that it should occur to us. In order to assert that a natural phenomenon is experimentally demonstrable we need, not an isolated record, but a reliable method of procedure. In relation to the test of significance, we may say that a phenomenon is experimentally demonstrable when we know how to conduct an experiment which will rarely fail to give us a statistically significant result.
-
 # Likelihood ratio and false positive risk
 
-## The maximum likelihood ratio $p$-value equivalent
+## What is the definitive question?
 
-Note again that we have been dividing the maximum
-likelihood for the alternative by the likelihood for 
-the NULL.
+Comments in @berkson1942tests highlight the point that 
+$p$-values relate only to what can be expected under the NULL
+
+> If an event has occurred, the definitive question is not, 
+`Is this an event which would be rare if the null hypothesis 
+is true?’ but ‘Is there an alternative hypothesis under which 
+the event would be relatively frequent?'
+
+By contrast, likelihood ratio statistics do address what
+Berkson identifies as "the definitive question". 
+
+## Density curves, under the NULL, and under the alternative
+
+Subsection \@ref(wear) gave the following statistical summary
+information, for the ten observations in the shoe wear dataset:
+```{r all10, echo=FALSE}
+print(prettyNum(unlist(shoeStats), digits=2, dropTrailing=TRUE),
+      quote=FALSE)
+```
+
+Here, in order to obtain a graph where the features
+of interest show up more clearly, we will take the first
+seven observations only from the shoe wear dataset.
+This is done for purposes of illustration only -- the
+analysis that properly reflects the data is the analysis
+that is based on all 10 observations.
+```{r shoes7, echo=FALSE}
+wear7 <- with(MASS::shoes, rbind(A, B, d=B-A))[,1:7]
+library(magrittr)
+shoeStat7 <- wear7['d',] %>% 
+  {list(Mean=mean(.), SD=sd(.), n=length(.))} %$%
+  {c(., SEM=SD/sqrt(n), t=Mean*sqrt(n)/SD)} %$%
+  {c(., pval=2*pt(t, df=n-1, lower.tail=FALSE), df=n-1)}
+colnames(wear7) <- rep("",7)
+print(wear7[3,,drop=FALSE])
+cat("\n")
+print(prettyNum(unlist(shoeStat7), digits=2, dropTrailing=TRUE),
+      quote=FALSE)
+```
+
+
+Figure \@ref(fig:DOshoeDens) compares the density curves, 
+under H0 and under an alternative H1 for which the estimated 
+mean of the $t$-distribution is $t = \sqrt{n} \bar{d}/s$.
+Under the alternative, the $t$-statistic becomes the 
+non-centrality parameter. Because this is subject to
+sampling error, the distribution is positively skewed
+and the mode, which gives the maximum likelihood, is 
+to the left of the mean.
+
+```{r cap5, echo=FALSE}
+tmath <- "$t$"
+pmath <- "$p$"
+cap5 <- paste0("Density curves for NULL and for the alternative,
+for a two-sided test with ",tmath," = ", round(shoeStat7[['t']],2),
+" on ", shoeStat7[['df']]," degrees of freedom.
+Vertical lines are placed at the positions that give 
+the ",pmath,"-value, here equal to ",round(shoeStat7[['pval']],3),
+".  Panel B shows the normal probability 
+plot for the `B-A` differences in the dataset.")
+```
+
+```{r DOshoeDens, fig.width=5.5, fig.asp=0.6, fig.align='center', fig.cap=cap5, out.width='80%', echo=FALSE}
+maxlr7 <- with(shoeStat7, tTOlr::tTOmaxlik(t, df))
+maxlrGPH(t=shoeStat7[['t']], df=shoeStat7[['df']],
+         tmax=maxlr7[['tmax']], maxlik=maxlr7[['maxlik']],
+         twoSided=TRUE, pretitle="Maximum Likelihood Ratio = ")
+```
+
+<!-- ```{r peqpval, echo=FALSE} -->
+<!-- p <- shoeStats[['pval']] -->
+<!-- df <- shoeStats[['df']] -->
+<!-- t <- shoeStats[['t']] -->
+<!-- ``` -->
+
+The function `tTOlr::tTOmaxlik()` can be used to calculate
+the maximum likelihood under the alternative, at the same
+time calculating the maximum likelihood ratio.  For Figure
+\@ref(fig:DOshoeDens), degrees of freedom are 
+`r shoeStat7[['df']]`, and the $t$-statistic is 
+`r round(shoeStat7[['t']],3)`.
+
+Calculations that give the maximum likelihood under the
+alternative, the maximum likelihood ratio, and other 
+statistical information, then proceed thus:
+
+```{r maxlr7, echo=2:3, eval=TRUE}
+t <- shoeStat7[['t']]
+stats7 <- list(t=2.256, df=6)  # t is rounded to 2dp
+maxlr7 <- with(stats7, tTOlr::tTOmaxlik(t, df))
+```
+The values returned, to three significant figures are:
+```{r sig3, echo=FALSE}
+print(setNames(as.character(c(round(unlist(maxlr7)[1:2], 3),
+                signif(unlist(maxlr7)[3], 3))), 
+               names(maxlr7)), quote=FALSE)
+```
+
+Whereas the $t$-statistic was `r round(t,3)`, the maximum
+likelihood estimate for the difference from the NULL, on the
+scale of the $t$-statistic, was `r round(maxlr7[['tmax']],3)`
+
+Likelihood ratios offer useful insights on what $p$-values
+may mean in practice.  
+In the absence of contextual information that gives an 
+indication of the size of the difference that is of 
+practical importance, the ratio of the maximum likelihood 
+when the NULL is false to the likelihood when the NULL is 
+true gives a sense of the meaning that can be placed on a 
+$p$-value.  If information is available on the prior 
+probability, or if a guess can be made, it can be 
+immediately translated into a false positive risk statistic.
+
+Likelihood ratio statistics directly address the question
+whether, under an alternative hypothesis, the observed 
+data would be relatively more likely.  They are, 
+for this reason, in principle preferable to $p$-values.
+They are important, both for the light that they shed on 
+$p$-values, and as alternatives to $p$-values. 
+
+<!-- ```{r tTOmaxlik, echo=FALSE} -->
+<!-- tTOmaxlik =  function(t, df) -->
+<!-- { -->
+<!-- # -->
+<!-- # under H1 use non-central t distribution -->
+<!-- # ncp is non-centrality paramater -->
+<!-- dens0 <- dt(t,df) -->
+<!-- int <- t*sqrt(c(df/(df+2.5), df/(df+1))) -->
+<!-- opt <- optimize(f=function(x)dt(x,df,ncp=t),maximum=TRUE, interval=int) -->
+<!-- maxlik=opt[["objective"]] -->
+<!-- # -->
+<!-- ## Calculate `fpr` as `(1-prior)/(1-prior+prior*lr)` -->
+<!-- return(list(maxlik=maxlik, tmax=opt[["maximum"]], dens0=dens0)) -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- ```{r tTOlr, echo=FALSE} -->
+<!-- tTOlr =  function(pval, t=NULL, nsamp, type="one.sample", delta=NULL, -->
+<!--                      sd=1, twoSided=TRUE, showMax=TRUE) -->
+<!-- { -->
+<!-- if(type=='one.sample'){sdiff <- sqrt(sd^2/nsamp) -->
+<!--                       df <- nsamp-1} else -->
+<!--                       {sdiff=sqrt(sd^2/nsamp + sd^2/nsamp) -->
+<!--                       df=2*(nsamp-1)} -->
+<!--                                         #under H0, use central t distribution -->
+<!-- if(is.null(t)) -->
+<!-- if(twoSided)t<-qt((1-pval/2),df,ncp=0) else -->
+<!--   t<-qt((1-pval),df,ncp=0) -->
+<!-- dens0=dt(t,df,0) -->
+<!-- if(twoSided)ref0 <- 2*dens0 else ref0 <- dens0 -->
+<!-- if(!is.null(delta)) -->
+<!--     likDelta <- dt(t, df, ncp=delta/sdiff) else likDelta <- NULL -->
+<!-- ## -->
+<!-- if(showMax)maxStats <- tTOmaxlik(t, df) else -->
+<!--            maxStats <- NULL -->
+<!-- ## maxlik, lrmax, tmax -->
+<!-- ## Calculate `fpr` as `(1-prior)/(1-prior+prior*lr)` -->
+<!-- likStats <- c(list(pval=pval, t=t, dens0=dens0), -->
+<!--               if(!is.null(likDelta))list(likDelta=likDelta, lrDelta=likDelta/ref0)else NULL, -->
+<!--               if(!is.null(maxStats))with(maxStats,  -->
+<!--               list(maxlik=maxlik, lrmax=maxlik/ref0, tmax=tmax))else NULL) -->
+<!-- likStats -->
+<!-- } -->
+<!-- ``` -->
+
+## Maximum likelihood ratio versus $p$-value
+
+As noted earlier, the maximum likelihood ratio is
+calculated by dividing the maximum likelihood for 
+the alternative by the likelihood for the NULL.
 
 ```{r cap3, eval=TRUE, echo=FALSE}
 cap3 <- 'Ratio of the maximum likelihood under the alternative
@@ -564,22 +718,26 @@ choices of $p$-value, for a range of sample sizes, and for a
 range of degrees of freedom.'
 ```
 
-```{r pTOmaxlrGPH, echo=FALSE, fig.width=7, fig.asp=0.6, fig.cap=cap3, fig.pos='ht', out.width='100%'}
-lrP <- data.frame(df=rep(seq(from=5, to=50,by=5),3), 
-                  pval=rep(c(.05,.01,.001),c(10,10,10)),
-                  tstat=numeric(30), lr=numeric(30))
-for(i in 1:30){
+```{r pTOmaxlrGPH, echo=FALSE, fig.width=6, fig.asp=0.6, fig.cap=cap3, fig.pos='ht', out.width='100%'}
+lrP <- data.frame(df=rep(c(2,seq(from=5, to=50,by=5)),4), 
+                  pval=rep(c(.05,.025,.01,.005),c(11,11,11,11)),
+                  tstat=numeric(44), lr=numeric(44))
+for(i in 1:nrow(lrP)){
   t <- qt(1-lrP$pval[i]/2,df=lrP$df[i])
-  lik0 <- dt(t, df = lrP$df[i])
-  lrP[i,c('tstat','lr')] <- c(t, tTOmaxlik(t = t, df = lrP$df[i])[["maxlik"]]/(2*lik0))  ## NB: Two-sided
+  dens0 <- dt(t, df = lrP$df[i])
+  lrP[i,c('tstat','lr')] <- c(t, tTOmaxlik(t = t, df = lrP$df[i])[["maxlik"]]/(2*dens0))  ## NB: Two-sided
 }
-aty <- list(c(2, 4,10,25,50,100,200),c(2,2.5,3,4,5,6))
+atx <- c(2,(1:5)*10)
+aty <- list(c(3,4,5,6,8,10,25,50,100),c(2,2.5,3,4,5))
 laby <- list(paste(aty[[1]]),paste(aty[[2]]))
-gph <- xyplot(lr+tstat ~ df, groups=pval, data=lrP, auto.key=list(columns=3), ylab="",
+gph <- xyplot(lr+tstat ~ df, groups=pval, data=lrP, type=c("p","l"),
+              auto.key=list(columns=4), 
+              xlab="Degrees of freedom", ylab="",
                 strip=strip.custom(factor.levels=c("Maximum likelihood ratio","t-statistic")),
-                scales=list(y=list(relation='free', log=TRUE,
+                scales=list(x=list(at=atx),
+                            y=list(relation='free', log=TRUE,
                                    at=aty, labels=laby)), 
-                par.settings=lattice::simpleTheme(pch=16))
+                par.settings=lattice::simpleTheme(pch=c(1,2,3,16), alpha.line=0.4,lwd=0.5, lty=2))
 update(gph,axis=latticeExtra::axis.grid)
 ```
 
@@ -588,43 +746,60 @@ ratio equivalents of $p$-values, for a range of sample sizes,
 for $p$-values that equal 0.05, 0.01, and 0.001, and for a
 range of degrees of freedom.  The comparison is always 
 between a point NULL (here $\mu$=0) and the alternative 
-$\mu$ > 0.  Notice that, for 6 or more degrees of freedom
-$p$ = 0.05 translates to a ratio that is less than 5.0,
-while it is less than 4.5 for 10 or more degrees of
-freedom.
+$\mu$ > 0.  For 6 or more degrees of freedom $p$ = 0.05 
+translates to a ratio that is less than 5.0, while it is less 
+than 4.5 for 10 or more degrees of freedom, and less than 4
+for 13 or more degrees of freedom.
 
-What is true is that the NULL hypothesis becomes less likely as
-the $p$-value becomes smaller. Additional information is required,
-if we are to say just how small.  The same applies where $p$ is 
-replaced by a cutoff $\alpha$ --- as $\alpha$ becomes smaller,
-the NULL hypothesis becomes less credible.  The relative amount 
-by which credibility reduces depends on the alternative that
-is chosen.
+The ratio is higher for low degrees of freedom because of
+the way that the shape of the distribution changes.  Other
+uncertainties enter.  Departures from assumptions are of
+greatest consequence in those contexts where distributional
+asssumptions will detect only the most extreme departures
+from assumptions --- i.e., when degrees of freedom are
+small.  Experience with comparable historical data can be
+especially useful in those circumstances.
 
-## False positive risk versus p-value
+An observed $p = 0.05$ can be taken as representative
+of $p$-values that range from $\alpha$ = 0.1 to 0,
+with odds against that are 9:1.  This is commonly seen
+as providing strong evidence in favour of the alternative.
+The case for rejecting the NULL looks much less convincing
+when this is translated into a maximum likelihood ratio of 
+the order or 4 or 5 in favour of the alternative.
 
-What is the probability, under one or other decision strategy, 
-that what is identified as a positive will be a false positive?
-False positive risk calculations require an assumption
-about the prior distribution. 
+Rather than focusing on the maximum likelihood ratio,
+one can compare the point NULL that we have been assuming
+with a point alternative, and a likelihood ratio that will
+usually be smaller.
 
-The false positive risk can be calculated as
-`(1-prior)/(1-prior+prior*lr)`, where `prior` = $\pi$ is the 
-prior probability of the alternative H1, with `1-prior` as the
-prior probability of H0.
+## False positive risk versus $p$-value
+
+The false positive risk is the probability, under one or other 
+decision strategy, that what is identified as a positive will 
+be a false positive?  False positive risk calculations require 
+an assessment of the prior probability `prior` = $\pi$ of the 
+alternative H1, with `1-prior` as the prior probability of H0.
+In the absence of such an assessment, all that can be said is
+that the NULL hypothesis becomes less likely as the $p$-value 
+becomes smaller. 
+
+For any value of the maximum likelihood ratio `lr`, the false 
+positive risk can then be calculated as 
+`(1-prior)/(1-prior+prior*lr)`. 
 
 ```{r cap4, eval=TRUE, echo=FALSE}
-cap4 <- 'False positive risk, for three different 
-choices of $p$-value, for a range of sample sizes, and for a 
+cap4 <- 'False positive risk, for three different choices
+of $p$-value, for a range of sample sizes, and for a 
 range of degrees of freedom.'
 ```
 
-```{r pTOfprGPH, echo=FALSE, fig.width=7, fig.asp=0.6, fig.cap=cap4, fig.pos='ht', out.width='100%'}
+```{r pTOfprGPH, echo=FALSE, fig.width=6, fig.asp=0.6, fig.cap=cap4, fig.pos='ht', out.width='100%'}
 lrP[,"fpr0.1"] <- (1-0.1)/(1-0.1+0.1*lrP[,"lr"])
 lrP[,"fpr0.5"] <- (1-0.5)/(1-0.5+0.5*lrP[,"lr"])
 aty <- list(c(0.025,0.05,0.1,0.2,0.4),c(0.004,0.01, 0.04,0.1,0.4))
 laby <- list(paste(aty[[1]]),paste(aty[[2]]))
-gph <- xyplot(fpr0.1+fpr0.5 ~ df, groups=pval, data=lrP, auto.key=list(columns=3), 
+gph <- xyplot(fpr0.1+fpr0.5 ~ df, groups=pval, data=lrP, auto.key=list(columns=4), 
                 xlab="Degrees of freedom",
                 ylab="False positive risk",
                 strip=strip.custom(factor.levels=c("Prior = 0.1","Prior = 0.5")),
@@ -640,7 +815,7 @@ for $p$-values that equal 0.05, 0.01, and 0.001, for a
 range of degrees of freedom, and for priors $\pi$ = 0.1
 and $\pi$ = 0.5 for the probibility of H1.
 
-## The power of a $t$ or other statistical test
+# Power -- how well does a planned experiment discriminate?
 
 The discussion will assume that we are testing $\mu$ = 0
 against $\mu$ > 0 (one-sided test),  or $\mu \neq 0$
@@ -653,8 +828,13 @@ For purposes of designing an experiment, researchers should want
 confidence that the experiment is capable of detecting differences
 in the mean, or (for an experiment that generates  one-sample data)
 the mean difference, that are more than trivial in magnitude.
+
+## The power of a $t$ or other statistical test
+
 The power is the probability that, if H1 is true, the calculated
 $p$-value will be smaller than a chosen threshold $\alpha$.
+Experiments that have low power can waste effort, to little
+purpose.
 
 For designing an experiment, setting a power is usually done
 relative to a baseline difference of 0.  There is, however,
@@ -664,25 +844,19 @@ what is more relevant than the power is the minimum mean
 difference or (for a two-sample test) difference in means 
 that one would like to be able to detect.
 
-```{r explain-power, echo=FALSE}
-cfdenspwr <- function(sdev=1, nsamp=19, sd=1.5, pval=0.05, power=0.8, sig.level=0.05, type="two.sample", alternative = 'one.sided'){
-  delta <- power.t.test(n=nsamp, sig.level=sig.level, 
-                        type=type,
-                        alternative = alternative,
-                        power=power)[['delta']]
-sed <- sdev*sqrt(2/nsamp)
-df <- 2*(nsamp-1)
+```{r explain-power, echo=FALSE, fig.width=5.5, fig.asp=0.8,out.width='80%'}
+cfdenspwr <- function(df=18, sig.level=0.05, alternative = 'one.sided', ncp=NA){
 vals <- pretty(c(-3.25, 3.25),50)
-dframe <- data.frame(x=c(vals,vals+delta/sed),
-                 y=c(dt(vals, df=(nsamp-1)*2),
-                     dt(vals+delta/sed, df=(nsamp-1)*2,ncp=delta/sed)),
+dframe <- data.frame(x=c(vals,vals+ncp),
+                 y=c(dt(vals, df=df, ncp=0),
+                     dt(vals+ncp, df=df,ncp=ncp)),
                  hyp=rep(c('H0','H1'),rep(length(vals),2)))
 tcrit<-qt((1-sig.level),df,ncp=0)
-lik0=dt(tcrit,df,0)
+dens0=dt(tcrit,df,0)
 #
 # under H1 use non-central t distribution
 # ncp is non-centrality paramater
-lik1=dt(tcrit,df,ncp=delta/sed)
+lik1=dt(tcrit,df,ncp=ncp)
 atx <- seq(from=-3, to=6, by=1)
 # labx <- as.expression( sapply(atx, 
 #             function(x) bquote(italic(.(x)*italic(s)))) )
@@ -692,7 +866,7 @@ xyplot(y ~ x, groups=hyp, data=dframe, type='l',
        xlab=expression(phantom(0)),
        sub=expression(italic(t)*'-statistic'),
        ylab='Probability density',
-       xlim=range(dframe$x), ylim=c(0,max(dframe$y)*1.08),
+       xlim=range(dframe$x), ylim=c(0,max(dframe$y)*1.125),
        scales=list(x=list(at=atx,labels=labx)),
        par.settings=list(clip=list(panel='off',
                                   layout.heights=list(axis.xlab.padding=0.5))),
@@ -705,31 +879,37 @@ xyplot(y ~ x, groups=hyp, data=dframe, type='l',
          panel.polygon(xx,yy,...,col=col[2], alpha=0.4)
          panel.text(x=2.82, y=0.16, 
                     expression(atop('Area = 0.8','(= Power)')))
+         panel.text(x=tcrit, y=-0.04, 
+                substitute(t[crit]==tc*' for '*italic(p)*phantom(0)*
+                             '= 0.05',
+                       list(tc=round(tcrit,2))), font=1, pos=1, col=col[1])
          maxy <- dt(0, df)
          ncp <- delta/sed
          panel.arrows(x0=0, y0=maxy, x1=ncp,
                       y1=maxy, length=0.1, col='gray40', code=3)
          panel.text(x=ncp/2, y=maxy,
                     expression(frac(delta,'SED')))
+         panel.text(1.35,0.04, 'Area = 0.05', pos=2, offset=0.25,
+                    col=col[1])
          xlim <- current.panel.limits()$xlim
          ylim <- current.panel.limits()$ylim
-         panel.arrows(x0=xlim[2], y0=lik0, x1=tcrit,
-                      y1=lik0, length=0.1, col=col[1])
+         
+         panel.arrows(x0=xlim[2], y0=dens0, x1=tcrit,
+                      y1=dens0, length=0.1, col=col[1])
          panel.arrows(x0=xlim[2], y0=lik1, x1=tcrit, y1=lik1, 
                       length=0.1, col=col[2])
          panel.arrows(1.35,0.035,2.04,0.025, length=0.1)
-         panel.text(1.35,0.04, 'Area = 0.05', pos=2, offset=0.25, col=col[1])
          panel.abline(v=tcrit, col='gray',lty=2)
          panel.arrows(x0=tcrit, y0=-0.04, x1=tcrit, y1=0, 
                       length=0.1, col=col[1])
-         panel.text(x=tcrit, y=-0.04, 
-                substitute(t[crit]==tc*' for '*italic(p)*phantom(0)*'= 0.05',
-                       list(tc=round(tcrit,2))), font=1, pos=1, col=col[1])
-      
-         panel.axis('right',at=lik0,labels='lik0', text.cex=1.0, line.col=col[1])
-         panel.axis('right',at=lik0,line.col=col[1],outside=TRUE)
-         panel.axis('right',at=lik1,labels='lik1',text.cex=1.0, line.col=col[2])
-         panel.axis('right',at=lik1, line.col=col[2],outside=TRUE)
+         panel.axis('right',at=dens0,
+                    labels=paste('dens0=',round(dens0,3)), 
+                    text.cex=1.0, line.col=col[1])
+#         panel.axis('right',at=dens0,line.col=col[1],outside=TRUE)
+         panel.axis('right',at=lik1,
+                    labels=paste('lik1=',round(lik1,3)),
+                    text.cex=1.0, line.col=col[2])
+#         panel.axis('right',at=lik1, line.col=col[2],outside=TRUE)
        },
        main=list(expression('One-sided 2-sample '*t*'-test, power=0.8 with '*alpha*'=0.05'), 
                  just='left',font=1, x=0, y=0)
@@ -737,8 +917,8 @@ xyplot(y ~ x, groups=hyp, data=dframe, type='l',
 }
 ```
 
-```{r cap5, echo=FALSE}
-cap5 <- 'This illustrates graphically, for a one-sided $t$-test,
+```{r cap6, echo=FALSE}
+cap6 <- 'This illustrates graphically, for a one-sided $t$-test,
 the $t$-statistic for the difference in means required to 
 achieve a given power.  For this graph, the $t$-statistic
 is calculated with 18 degrees of freedom.  The two density 
@@ -746,52 +926,44 @@ curves are separated by the amount that gives \\textit{power}
 = 0.8 for $\\alpha$ = 0.05 .'
 ```
 
-```{r pwr-gph, fig.width=7, fig.asp=0.6, fig.cap=cap5, out.width='80%', echo=FALSE, fig.align="center"}
-cfdenspwr(nsamp=19)
-```
-
-```{r power, eval=TRUE, echo=FALSE}
-delta2 <- power.t.test(n=19, sd=1.5, sig.level=0.05, power=.8,
-                      type='two.sample', 
-                      alternative='two.sided')[['delta']]
-n <- 19
-df2 <- 2*(n-2)
-## delta2 is the separation between means
-dSTD2 <- delta2/sqrt(2/n)   ## Difference/(SE of difference)
-tcrit2 <- qt(.95,df=df2)   
-delta1 <- power.t.test(n=19, sd=1.5, sig.level=0.05, power=.8,
-                       type='one.sample', 
-                       alternative='two.sided')[['delta']]
-n1 <- df2+1
-dSTD1 <- delta1/sqrt(1/n1)   ## Difference/(SE of difference)
-tcrit1 <- qt(.95,df=df2)  
+```{r pwr-gph, fig.width=6, fig.asp=0.6, fig.cap=cap6, out.width='80%', echo=FALSE, fig.align="center"}
+n <- 19; df <- 2*(n-1); sd <- 1.5; sed <- sd*sqrt(2/n)
+## Calculate difference delta between means that gives power=0.8
+delta <- power.t.test(n=19, sd=sd, sig.level=0.05, 
+                      power=0.8, type="two.sample", 
+                      alternative = "one.sided")[['delta']]
+## Calculate the non-centrality parameter ncp
+ncp <- delta/sed # sed is Standard Error of Difference
+cfdenspwr(df=2*(n-1), ncp=ncp)
 ```
 
 Figure \@ref(fig:pwr-gph) is designed to illustrate the notion
 of power graphically.  The densities shown are for a two-sample 
-comparison (equal variances) with $n = 19$ in each sample,
-or $n = 37$ for a single sample $t$-test. In either case the
-$t$-statistic for the difference in means, or (with a one 
-sample test) for the mean difference is calculated with 36 
-degrees of freedom.  The two density curves are separated by 
-the amount required for the test to have a \textit{power} 
-that equals 0.8 for $\alpha$ = 0.05, with a standard deviation
-of 1.5 .  Thus $\delta =$
-`r round(delta2,3)` $s$ for a two-sample test with $n = 19$, 
-or $\delta =$ `r round(delta1,3)` $s$ for a one-sample test
-with $n = 37$.
+comparison (equal variances) with $n = 19$ in each sample.
+Calculations proceed by first calculating the separation
+between means required, with $\alpha=0.05$, to give a
+power that equals 0.8, and from this the non-centrality
+parameter, thus:
+
+```{r power, echo=1:7, eval=FALSE,ref.label='pwr-gph'}
+```
+
+The comparison is between densities of $t$-statistics, both
+with degrees of freedom `r df`, the first with 
+noncentrality parameter `ncp` = 0, and the second with
+noncentrality parameter `ncp` = `delta/sed` = `r round(ncp,3)` .
+
+The same graph will result irrespective of the standard
+deviation.  It is at the same time the graph that will be
+obtained for a single sample $t$-test with $n = 37$, now
+with `delta` equal to the mean difference rather than the
+difference in means.  The two density curves are in each
+case separated, on the scale of the $t$-statistic, by the
+amount required for the test to have a \textit{power} 
+that equals 0.8 for $\alpha$ = 0.05.  
 
 Here are the calculations:
 ```{r power, eval=FALSE}
-```
-
-```{r power12, echo=FALSE, eval=FALSE}
-cat("Two-sample, n=9, one-sided:\n")
-round(c(delta=delta2, tcrit=tcrit2,
-          Power=1 - pt(tcrit2, ncp=dSTD2, df=18)), 3)
-cat("One-sample, n=19, one-sided\n")
-round(c(delta=delta1, tcrit=tcrit1,
-  Power=1 - pt(tcrit1, ncp=dSTD1, df=18)), 3)
 ```
 
 Once experimental results are obtained and a $p$-value has been
@@ -819,7 +991,7 @@ With the results in, the relevant alternative to H0, for
 purposes of calculating a likelihood ratio, has
 $\delta$ = 1.4.  Suppose, then, that the experimental 
 results yield a standard deviation of 1.2, assuming
-that the standard deviation os the same for both treatments.
+that the standard deviation is the same for both treatments.
 
 Figure \@ref(fig:lrVSpGPH) (left panel) plots maximum 
 likelihood ratios, and likelihood ratios, for the choices 
@@ -836,17 +1008,17 @@ lrmat <- matrix(nrow=length(pval), ncol=4)
 colnames(lrmat) <- c("pval", "lrDelta1", "lrDelta2", "lrmax")
 for(p in pval){
   i <- i+1
-  lrmat[i,1:2] <- unlist(tTOlr(pval=p,nsamp=nsamp,delta=delta[1],sd=sd,
-                     twoSided=twoSided, showMax=FALSE))[c("pval","lrDelta")]
-  lrmat[i,3:4] <- unlist(tTOlr(pval=p,nsamp=nsamp,delta=delta[2],sd=sd,
-                     twoSided=twoSided, showMax=TRUE))[c("lrDelta","lrmax")]
+  lrmat[i,1:2] <- tTOlr(pval=p,nsamp=nsamp,delta=delta[1],sd=sd,
+                     twoSided=twoSided, showMax=FALSE)[c("pval","lrDelta")]
+  lrmat[i,3:4] <- tTOlr(pval=p,nsamp=nsamp,delta=delta[2],sd=sd,
+                     twoSided=twoSided, showMax=TRUE)[c("lrDelta","lrmax")]
 }
 return(as.data.frame(lrmat))
 }
 ```
 
-```{r cap6, eval=TRUE, echo=FALSE}
-cap6 <- 'Ratio of likelihood under the alternative to the likelihood 
+```{r cap7, eval=TRUE, echo=FALSE}
+cap7 <- 'Ratio of likelihood under the alternative to the likelihood 
 under the NULL, as a function of the calculated $p$-value, with
 $n$ = 9 in each sample in a two-sample test, and 
 with $\\delta$ = 0.6$s$ set as the minimum difference of interest.
@@ -857,27 +1029,8 @@ tests.
 '
 ```
 
-The power, calculated relative to a specific choice of $\alpha$,
-is an important consideration when an experiment is designed. 
-The aim is, for a simple randomised trial of the type considered
-here, to ensure an acceptably high probability that a treatment
-effect $\delta$ that is large enough to be of scientific interest,
-will be detectable given a threshold $\alpha$ for the resultant
-$p$-value.  Once experimental results are available, the focus
-should shift to assessing the strength of the evidence that
-the treatment effect is large enough to be of scientific interest,
-i.e., that it is of magnitude $\delta$ or more.
-
-Any treatment effect, however small, contributes to shifting the
-balance of probability between the NULL and the alternative.
-By contrast, the maximum likelihood ratio depends only on the
-estimated treatment effect.  What is really of interest, 
-as has just been noted, is the strength of evidence that the
-treatment effect is of magnitude $\delta$ or more.
-
-
-```{r lrVSpGPH, fig.width=7, fig.asp=0.5, out.width="100%", fig.pos='h', fig.cap=cap6, eval=TRUE, echo=FALSE, warning=FALSE}
-suppressPackageStartupMessages(library(latticeExtra))
+```{r lrVSpGPH, fig.width=6, fig.asp=0.5, out.width="100%", fig.pos='ht', fig.cap=cap7, eval=TRUE, echo=FALSE, warning=FALSE}
+# suppressPackageStartupMessages(library(latticeExtra))
 atx <- c(0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2)
 aty <- c(.5,1,2,5,10,20,50,100, 200)
 atxlab <- paste(atx)
@@ -903,16 +1056,33 @@ gph <- xyplot(lrmax+lrDelta1+lrDelta2 ~ pval | type,data=df2,
 update(gph,axis=latticeExtra::axis.grid)
 ```
 
+The power, calculated relative to a specific choice of $\alpha$,
+is an important consideration when an experiment is designed. 
+The aim is, for a simple randomized trial of the type considered
+here, to ensure an acceptably high probability that a treatment
+effect $\delta$ that is large enough to be of scientific interest,
+will be detectable given a threshold $\alpha$ for the resultant
+$p$-value.  Once experimental results are available, the focus
+should shift to assessing the strength of the evidence that
+the treatment effect is large enough to be of scientific interest,
+i.e., that it is of magnitude $\delta$ or more.
 
-## False positive risk when $\alpha$ is used as cutoff
+Any treatment effect, however small, contributes to shifting the
+balance of probability between the NULL and the alternative.
+By contrast, the maximum likelihood ratio depends only on the
+estimated treatment effect.  What is really of interest, 
+as has just been noted, is the strength of evidence that the
+treatment effect is of magnitude $\delta$ or more.
 
-In this case, $\alpha$ is used as the basis for a 
-decision-making strategy.  Also relevant to the
-calculation is the experimental design strategy.
+## False positive risk, when $\alpha$ is used as cutoff
+
+The use of a cutoff $\alpha$, as a basis for a 
+decision-making strategy, is a less nuanced use of the
+evidence than when there is attention to the specific
+$p$-value or, equivqlently, to the $t$-statistic.
 Assume that experiments are designed to have a
-power $P_w$ of accepting H1 when it is true, for
-the given choice of $\alpha$.  Then the false
-positive risk is:
+power $P_w$ to accept H1 when $p <= \alpha$.  Then the 
+false positive risk is:
 $$
 \frac{\alpha(1-\pi)}{\alpha(1-\pi)+\pi P_w}
 $$
@@ -942,7 +1112,35 @@ to $P_w$ = 0.9 while holding the sample size constant,
 one is increasing the separation between the distribution 
 for the NULL and the distribution for the alternative H1.
 
-# Further reading
+# How should results be reported?
+
+$P$-values have come to have a central role in the reporting of 
+scientific results. It is commonly assumed that an individual
+$p$-value that equals 0.05 provides 19 to 1 evidence against the 
+NULL hypothesis, and in favour of the alternative. Two points are
+
+* The probability to which it most directly relates is the
+probability of obtaining such a result, given the NULL
+* For this purpose, the relevant probability is 0.1, not 0.05
+
+The maximum likelihood ratio for the alternative against
+the NULL depends on the degrees of freedom.  It is less than 
+4.5 for degrees of freedom greater than 5.  
+
+Results should come with evidence of relevant checks on
+distributional assumptions.  Where degrees of freedom are
+small (e.g., 4 or less), and there is no evidence from
+comparable data from earlier studies on which to rely,
+checks are in general unlikely to be effective. The
+uncertainty that this generates should be acknowledged.
+
+Meaningful data are a richer source of information than
+can be satisfactorily summarized in a single statistic.
+Consider the use of multiple forms of statistical
+summary, each offering its own perspective, and supported
+by relevant graphs.
+
+# Further reading and references
 
 See especially @colquhoun2017reproducibility, @Wasserstein_2019,
 and other papers in the American Statistician supplement in which
@@ -950,4 +1148,4 @@ Wasserstein's editorial appeared.  Code used for the calculations
 is based on David Colquhoun's code that is available from
 https://ndownloader.figshare.com/files/9795781.
 
-# References
+## References

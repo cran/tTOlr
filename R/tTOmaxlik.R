@@ -7,10 +7,13 @@
 #' that makes the likelihood under H1 a maximum.
 #' Additionally, return the likelihood under H0.
 #'
-#' @details Because the \code{t}-distribution mean under H1
-#' is a random variable, one has a non-central \code{t},
-#' and the mode (which gives the maximum) differs somewhat
-#' from the mean.
+#' #' @details The function returns the maximum likelihood estimate
+#' of the maximum likelihood on the scale of the $t$-statistic,
+#' for the likelihood under the alternative, when the
+#' when the $t$-statistic is used as non-centrality parameter.
+#' This results in a value for the likelihood ratio that differs
+#' from (and is smaller than) the standard likelihood ratio
+#' statistic. Additionally, return the likelihoods under H0 and H1.
 #'
 #' @param t \code{t}-statistic.
 #' @param df Degrees of freedom.
@@ -19,8 +22,8 @@
 #'  \itemize{
 #'  \item maxlik - Maximum likelihood under H1
 #'  \item tmax - \code{t}-statistic for difference in means that makes
-#'  likelihood a maximum
-#'  \item lik0 - Likelihood under H0
+#'  likelihood a maximum under H1
+#'  \item lik0 - Density (one-sided) under H0
 #'  }
 #'
 #' @references  van Aubel, A; Gawronski, W (2003).
@@ -34,8 +37,6 @@
 #'
 #' @examples
 #' stats <- tTOmaxlik(t=2, df=5)
-#' likrat <- stats[['maxlik']]/stats[['lik0']]
-#' c("Maximum likelihood ratio"=likrat)
 #' ## Likelihood ratio, 1-sided test and 2-sided test, p=0.05
 #' tvals1 <- qt(0.05, df=c(2,5,20), lower.tail=FALSE)
 #' tvals2 <- qt(0.025, df=c(2,5,20), lower.tail=FALSE)
@@ -57,10 +58,11 @@ tTOmaxlik =  function(t, df)
   # under H1 use non-central t distribution
   # ncp is non-centrality paramater
   lik0 <- dt(t,df)
+
   int <- t*sqrt(c(df/(df+2.5), df/(df+1)))
   opt <- optimize(f=function(x)dt(x,df,ncp=t),maximum=TRUE, interval=int)
-  maxlik=opt[["objective"]]
+  maxlik=opt[["maximum"]]
   #
   ## Calculate `fpr` as `(1-prior)/(1-prior+prior*lr)`
-  return(list(maxlik=maxlik, tmax=opt[["maximum"]], lik0=lik0))
+  return(c(maxlik=maxlik, tmax=opt[["maximum"]], lik0=lik0))
 }

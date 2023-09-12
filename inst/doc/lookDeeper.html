@@ -12,14 +12,60 @@
 
 <meta name="author" content="John Maindonald" />
 
-<meta name="date" content="2020-08-11" />
+<meta name="date" content="2023-09-12" />
 
 <title>P-values – Uses, abuses, and alternatives</title>
 
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
 
 
 
 
+
+
+<style type="text/css">
+
+div.csl-bib-body { }
+div.csl-entry {
+clear: both;
+}
+.hanging div.csl-entry {
+margin-left:2em;
+text-indent:-2em;
+}
+div.csl-left-margin {
+min-width:2em;
+float:left;
+}
+div.csl-right-inline {
+margin-left:2em;
+padding-left:1em;
+}
+div.csl-indent {
+margin-left: 2em;
+}
+</style>
 
 <style type="text/css">body {
 background-color: #fff;
@@ -213,50 +259,124 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 
 
-<h1 class="title toc-ignore">P-values – Uses, abuses, and alternatives</h1>
+<h1 class="title toc-ignore">P-values – Uses, abuses, and
+alternatives</h1>
 <h4 class="author">John Maindonald</h4>
-<h4 class="date">11 August 2020</h4>
+<h4 class="date">12 September 2023</h4>
 
 
 
-<p>Statistical analysis is a partner to, and not a substitute for, robust scientific processes. The use of experimental data provides the simplest context in which to explore this point. For experimental work, over and above what may emerge from a statistical analysis, the demand is that results be replicable. Laboratory studies have repeatedly shown shown that drinking regular caffeinated coffee increases blood pressure, though with minimal long term effects. See <span class="citation">Green, Kirby, and Suls (1996)</span>. It is accepted that there is this effect, not from the statistical analysis of results from any individual trial, but because the effect has been demonstrated in repeated trials. The evidence is unusually robust.</p>
+<p>Statistical analysis is a partner to, and not a substitute for,
+robust scientific processes. The use of experimental data provides the
+simplest context in which to explore this point. For experimental work,
+over and above what may emerge from a statistical analysis, the demand
+is that results be replicable. Laboratory studies have repeatedly shown
+shown that drinking regular caffeinated coffee increases blood pressure,
+though with minimal long term effects. See <span class="citation">Green,
+Kirby, and Suls (1996)</span>. It is accepted that there is this effect,
+not from the statistical analysis of results from any individual trial,
+but because the effect has been demonstrated in repeated trials. The
+evidence is unusually robust.</p>
 <p>The role of statistical analysis has been:</p>
 <ul>
-<li>to demonstrate that, collating the evidence from repeated trials, the effect does appear real;</li>
+<li>to demonstrate that, collating the evidence from repeated trials,
+the effect does appear real;</li>
 <li>to assess the magnitude of the effect.</li>
 </ul>
-<p>Worldwide, hundreds of thousands of randomised trials are conducted annually. What do they tell us? In clinical medicine, follow-up trials are common, and clear conclusions will often emerge from the careful collation of evidence that, in important cases, is likely to follow. In many other areas follow-up trials have until recently been uncommon. This is now changing, and for good reason. Independent replication of the experimental process provides checks on the total experimental process, including the statistical analysis. It is unlikely that the same mistakes in experimental procedure and/or statistical analysis will be repeated.</p>
-<p>These replication rates are so low, in the areas to which these papers relate, that they make nonsense of citations to published individual trial results as evidence that a claimed effect has been scientifically demonstrated.} Papers that had a key role in getting attention to reproducibility concerns have been <span class="citation">Prinz, Schlange, and Asadullah (2011)</span> and <span class="citation">Begley and Ellis (2012)</span>. The first (6 out of 53 “landmark” studies reproduced) related to drug trials, and the second (19 out of 65 “seminal” studies) to cancer drug trials. Since those studies appeared, results have appeared from systematic attempts to reproduce published work in psychology (around 40%), in laboratory economics (11 of 18), and in social science (12 of 18).</p>
-<p>For research and associated analyses with observational data, the absence of experimental control offers serious challenges. In a case where the aim is to compare two or more groups, there are certain to be more differences than the difference that is of interest. Commonly, regression methods are used to apply “covariate adjustments”. It is then crucial that all relevant covariates and covariate interactions are accounted for, and that covariates are measured with adequate accuracy. Do covariates require transformation (e.g., <span class="math inline">\(x\)</span>, or <span class="math inline">\(\log(x)\)</span>, or <span class="math inline">\(x^2\)</span>) for purposes of use in the regression model?</p>
-<p>In a hard-hitting paper titled “Cargo-cult statistics and scientific crisis”, <span class="citation">Stark and Saltelli (2018)</span> comment, quoting also from <span class="citation">Edwards and Roy (2017)</span>:</p>
+<p>Worldwide, hundreds of thousands of randomised trials are conducted
+annually. What do they tell us? In clinical medicine, follow-up trials
+are common, and clear conclusions will often emerge from the careful
+collation of evidence that, in important cases, is likely to follow. In
+many other areas follow-up trials have until recently been uncommon.
+This is now changing, and for good reason. Independent replication of
+the experimental process provides checks on the total experimental
+process, including the statistical analysis. It is unlikely that the
+same mistakes in experimental procedure and/or statistical analysis will
+be repeated.</p>
+<p>These replication rates are so low, in the areas to which these
+papers relate, that they make nonsense of citations to published
+individual trial results as evidence that a claimed effect has been
+scientifically demonstrated.} Papers that had a key role in getting
+attention to reproducibility concerns have been <span class="citation">Prinz, Schlange, and Asadullah (2011)</span> and <span class="citation">Begley and Ellis (2012)</span>. The first (6 out of 53
+“landmark” studies reproduced) related to drug trials, and the second
+(19 out of 65 “seminal” studies) to cancer drug trials. Since those
+studies appeared, results have appeared from systematic attempts to
+reproduce published work in psychology (around 40%), in laboratory
+economics (11 of 18), and in social science (12 of 18).</p>
+<p>For research and associated analyses with observational data, the
+absence of experimental control offers serious challenges. In a case
+where the aim is to compare two or more groups, there are certain to be
+more differences than the difference that is of interest. Commonly,
+regression methods are used to apply “covariate adjustments”. It is then
+crucial that all relevant covariates and covariate interactions are
+accounted for, and that covariates are measured with adequate accuracy.
+Do covariates require transformation (e.g., <span class="math inline">\(x\)</span>, or <span class="math inline">\(\log(x)\)</span>, or <span class="math inline">\(x^2\)</span>) for purposes of use in the
+regression model?</p>
+<p>In a hard-hitting paper titled “Cargo-cult statistics and scientific
+crisis”, <span class="citation">Stark and Saltelli (2018)</span>
+comment, quoting also from <span class="citation">Edwards and Roy
+(2017)</span>:</p>
 <blockquote>
-<p>While some argue that there is no crisis (or at least not a systemic problem), bad incentives, bad scientific practices, outdated methods of vetting and disseminating results, and techno-science appear to be producing misleading and incorrect results. This might produce a crisis of biblical proportions: as Edwards and Roy write: ``If a critical mass of scientists become untrustworthy, a tipping point is possible in which the scientific enterprise itself becomes inherently corrupt and public trust is lost, risking a new dark age with devastating consequences to humanity.’’</p>
+<p>While some argue that there is no crisis (or at least not a systemic
+problem), bad incentives, bad scientific practices, outdated methods of
+vetting and disseminating results, and techno-science appear to be
+producing misleading and incorrect results. This might produce a crisis
+of biblical proportions: as Edwards and Roy write: ``If a critical mass
+of scientists become untrustworthy, a tipping point is possible in which
+the scientific enterprise itself becomes inherently corrupt and public
+trust is lost, risking a new dark age with devastating consequences to
+humanity.’’</p>
 </blockquote>
-<p>Statistical issues are then front and centre in what many are identifying as a crisis, but are not the whole story. The crisis is one that scientists and statisticians need to tackle in partnership.</p>
-In a paper that deserves much more attention than it has received, <span class="citation">Tukey (1997)</span>, John W Tukey argued that, as part of the process of fitting a model and forming a conclusion, there should be incisive and informed critique of the data used, of the model, and of the inferences made. It is important that analysts search out available information about the processes that generated the data, and consider critically how this may affect the reliance placed on it. Other specific types of challenge (this list is longer than Tukey’s) may include:
-
-<p>Exposure to diverse challenges will build (or destroy!) confidence in model-based inferences. We should trust those results that have withstood thorough and informed challenge.</p>
-<p>Data do not stand on their own. An understanding of the processes that generated the data is crucial to judging how data can and cannot reasonably be used. So also is application area insight.</p>
+<p>Statistical issues are then front and centre in what many are
+identifying as a crisis, but are not the whole story. The crisis is one
+that scientists and statisticians need to tackle in partnership.</p>
+In a paper that deserves much more attention than it has received, <span class="citation">Tukey (1997)</span>, John W Tukey argued that, as part
+of the process of fitting a model and forming a conclusion, there should
+be incisive and informed critique of the data used, of the model, and of
+the inferences made. It is important that analysts search out available
+information about the processes that generated the data, and consider
+critically how this may affect the reliance placed on it. Other specific
+types of challenge (this list is longer than Tukey’s) may include:
+<p>Exposure to diverse challenges will build (or destroy!) confidence in
+model-based inferences. We should trust those results that have
+withstood thorough and informed challenge.</p>
+<p>Data do not stand on their own. An understanding of the processes
+that generated the data is crucial to judging how data can and cannot
+reasonably be used. So also is application area insight.</p>
 <div id="references" class="section level1 unnumbered">
-<h1>References</h1>
-<div id="refs" class="references">
-<div id="ref-begley2012drug">
-<p>Begley, C Glenn, and Lee M Ellis. 2012. “Drug Development: Raise Standards for Preclinical Cancer Research.” <em>Nature</em> 483 (7391). Nature Publishing Group: 531–33.</p>
+<h1 class="unnumbered">References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent">
+<div id="ref-begley2012drug" class="csl-entry">
+Begley, C Glenn, and Lee M Ellis. 2012. <span>“Drug Development: Raise
+Standards for Preclinical Cancer Research.”</span> <em>Nature</em> 483
+(7391): 531–33.
 </div>
-<div id="ref-edwards_roy_2017">
-<p>Edwards, Marc A., and Siddhartha Roy. 2017. “Academic Research in the 21st Century: Maintaining Scientific Integrity in a Climate of Perverse Incentives and Hypercompetition.” <em>Environmental Engineering Science</em> 34 (1): 51–61. <a href="https://doi.org/10.1089/ees.2016.0223">https://doi.org/10.1089/ees.2016.0223</a>.</p>
+<div id="ref-edwards_roy_2017" class="csl-entry">
+Edwards, Marc A., and Siddhartha Roy. 2017. <span>“Academic Research in
+the 21st Century: Maintaining Scientific Integrity in a Climate of
+Perverse Incentives and Hypercompetition.”</span> <em>Environmental
+Engineering Science</em> 34 (1): 51–61. <a href="https://doi.org/10.1089/ees.2016.0223">https://doi.org/10.1089/ees.2016.0223</a>.
 </div>
-<div id="ref-green_kirby_suls_1996">
-<p>Green, Peter J., Robert Kirby, and Jerry Suls. 1996. “The Effects of Caffeine on Blood Pressure and Heart Rate: A Review.” <em>Annals of Behavioral Medicine</em> 18 (3): 201–16. <a href="https://doi.org/10.1007/bf02883398">https://doi.org/10.1007/bf02883398</a>.</p>
+<div id="ref-green_kirby_suls_1996" class="csl-entry">
+Green, Peter J., Robert Kirby, and Jerry Suls. 1996. <span>“The Effects
+of Caffeine on Blood Pressure and Heart Rate: A Review.”</span>
+<em>Annals of Behavioral Medicine</em> 18 (3): 201–16. <a href="https://doi.org/10.1007/bf02883398">https://doi.org/10.1007/bf02883398</a>.
 </div>
-<div id="ref-prinz2011believe">
-<p>Prinz, Florian, Thomas Schlange, and Khusru Asadullah. 2011. “Believe It or Not: How Much Can We Rely on Published Data on Potential Drug Targets?” <em>Nature Reviews Drug Discovery</em> 10 (9). Nature Publishing Group: 712–12.</p>
+<div id="ref-prinz2011believe" class="csl-entry">
+Prinz, Florian, Thomas Schlange, and Khusru Asadullah. 2011.
+<span>“Believe It or Not: How Much Can We Rely on Published Data on
+Potential Drug Targets?”</span> <em>Nature Reviews Drug Discovery</em>
+10 (9): 712–12.
 </div>
-<div id="ref-stark_saltelli_2018">
-<p>Stark, Philip B., and Andrea Saltelli. 2018. “Cargo-Cult Statistics and Scientific Crisis.” <em>Significance</em> 15 (4): 40–43. <a href="https://doi.org/10.1111/j.1740-9713.2018.01174.x">https://doi.org/10.1111/j.1740-9713.2018.01174.x</a>.</p>
+<div id="ref-stark_saltelli_2018" class="csl-entry">
+Stark, Philip B., and Andrea Saltelli. 2018. <span>“Cargo-Cult
+Statistics and Scientific Crisis.”</span> <em>Significance</em> 15 (4):
+40–43. <a href="https://doi.org/10.1111/j.1740-9713.2018.01174.x">https://doi.org/10.1111/j.1740-9713.2018.01174.x</a>.
 </div>
-<div id="ref-tukey_1997">
-<p>Tukey, J. W. 1997. “More Honest Foundations for Data Analysis.” <em>Journal of Statistical Planning and Inference</em> 57 (1): 21–28.</p>
+<div id="ref-tukey_1997" class="csl-entry">
+Tukey, J. W. 1997. <span>“More Honest Foundations for Data
+Analysis.”</span> <em>Journal of Statistical Planning and Inference</em>
+57 (1): 21–28.
 </div>
 </div>
 </div>

@@ -3,6 +3,7 @@
 export(tTOlr)
 export(tTOmaxlik)
 importFrom(lattice,xyplot)
+importFrom(latticeExtra,axis.grid)
 importFrom(stats,dt)
 importFrom(stats,optimize)
 importFrom(stats,pt)
